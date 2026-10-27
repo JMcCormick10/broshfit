@@ -1,4 +1,5 @@
 import type { Profile } from "../../lib/database.types";
+import { getProfileAvatarUrl } from "../../lib/profiles";
 import { Button } from "../Atoms/Button";
 
 const accentClasses: Record<Profile["accent"], string> = {
@@ -31,7 +32,7 @@ export function ProfileCard({
       >
         {profile.avatar_url ? (
           <img
-            src={profile.avatar_url}
+            src={getProfileAvatarUrl(profile.avatar_url) ?? undefined}
             alt=""
             className="size-full object-cover"
           />

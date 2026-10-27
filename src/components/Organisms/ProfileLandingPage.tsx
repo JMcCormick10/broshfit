@@ -14,6 +14,7 @@ import {
   type WorkoutSession,
   type WorkoutRoutine,
 } from "../../lib/workouts";
+import { getProfileAvatarUrl } from "../../lib/profiles";
 import { Spinner } from "../Atoms/Spinner";
 import { WorkoutRoutinePickerDialog } from "./WorkoutRoutinePickerDialog";
 import { ActiveWorkoutDashboard } from "./ActiveWorkoutDashboard";
@@ -188,7 +189,7 @@ export function ProfileLandingPage({
               <span className="flex size-10 items-center justify-center overflow-hidden rounded-md border border-border bg-surface font-heading text-lg font-bold text-primary">
                 {profile.avatar_url ? (
                   <img
-                    src={profile.avatar_url}
+                    src={getProfileAvatarUrl(profile.avatar_url) ?? undefined}
                     alt=""
                     className="size-full object-cover"
                   />
