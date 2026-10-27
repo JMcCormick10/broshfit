@@ -44,7 +44,7 @@ export function DialogShell({
       <section
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`w-full ${widthClass} rounded-xl border border-border bg-surface shadow-2xl shadow-black/60 ${className}`}
+        className={`dialog-surface min-w-0 w-full ${widthClass} rounded-xl border border-border bg-surface shadow-2xl shadow-black/60 ${className}`}
         role="dialog"
       >
         <header className="mb-6 flex items-start justify-between gap-4">

@@ -29,6 +29,12 @@ body {
   margin-inline: auto;
 }
 
+.dialog-surface :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+}
+
 @media (min-width: 40rem) {
   .page-gutter {
     padding-inline-start: max(2rem, env(safe-area-inset-left, 0px));

@@ -78,7 +78,7 @@ export function CompletedWorkoutEditorDialog({
 
           <FormField label="Completed date">
             <input
-              className="w-full rounded-md border border-border bg-void px-3.5 py-3 text-starlight outline-none transition focus:border-secondary"
+              className="min-w-0 max-w-full w-full rounded-md border border-border bg-void px-3.5 py-3 text-starlight outline-none transition focus:border-secondary"
               max={MAX_COMPLETED_AT}
               onChange={(event) => setCompletedAt(event.target.value)}
               required
