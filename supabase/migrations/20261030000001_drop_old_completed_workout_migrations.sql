@@ -1,0 +1,1 @@
+-- No-op migration marker. The completed workout RPC is managed by 20261030000000_completed_workout_atomic_update.sql.
