@@ -4,7 +4,10 @@ import { DialogShell } from "../Molecules/DialogShell";
 import { ConfirmationDialog } from "../Molecules/ConfirmationDialog";
 import { FormField } from "../Molecules/FormField";
 import type { CompletedWorkoutSummary } from "../../lib/workouts";
-import { applySetWeightChange } from "../../lib/workouts";
+import {
+  applySetWeightChange,
+  inheritFirstSetWeight,
+} from "../../lib/workouts";
 import {
   MAX_COMPLETED_AT,
   useCompletedWorkoutEditor,
@@ -169,6 +172,18 @@ export function CompletedWorkoutEditorDialog({
                           <input
                             aria-label={`${exercise.exerciseName} set ${set.setNumber} actual weight`}
                             className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary"
+                            onBlur={() => {
+                              if (set.setNumber !== 1) return;
+                              updateExercise(
+                                exercise.key,
+                                (currentExercise) => ({
+                                  ...currentExercise,
+                                  sets: inheritFirstSetWeight(
+                                    currentExercise.sets,
+                                  ),
+                                }),
+                              );
+                            }}
                             onChange={(event) =>
                               updateExercise(
                                 exercise.key,

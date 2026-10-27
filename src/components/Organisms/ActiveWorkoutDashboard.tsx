@@ -6,7 +6,10 @@ import { FormField } from "../Molecules/FormField";
 import { DialogShell } from "../Molecules/DialogShell";
 import { ConfirmationDialog } from "../Molecules/ConfirmationDialog";
 import type { WorkoutSession } from "../../lib/workouts";
-import { applySetWeightChange } from "../../lib/workouts";
+import {
+  applySetWeightChange,
+  inheritFirstSetWeight,
+} from "../../lib/workouts";
 import { useActiveWorkoutSession } from "../../hooks/useActiveWorkoutSession";
 import { SessionExercisePickerDialog } from "./SessionExercisePickerDialog";
 import {
@@ -332,6 +335,13 @@ export function ActiveWorkoutDashboard({
                           aria-label={`${selectedExercise.exerciseName} set ${set.setNumber} actual weight`}
                           className="w-full rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary disabled:opacity-60"
                           disabled={isSaving}
+                          onBlur={() => {
+                            if (set.setNumber !== 1) return;
+                            updateExercise(selectedExercise.id, (exercise) => ({
+                              ...exercise,
+                              sets: inheritFirstSetWeight(exercise.sets),
+                            }));
+                          }}
                           onChange={(event) =>
                             updateExercise(selectedExercise.id, (exercise) => ({
                               ...exercise,

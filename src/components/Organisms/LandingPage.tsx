@@ -18,7 +18,7 @@ export function LandingPage({
   statusMessage,
 }: LandingPageProps) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-void px-4 py-8 text-starlight sm:px-8">
+    <main className="page-gutter relative flex min-h-screen items-center justify-center overflow-hidden bg-void py-8 text-starlight">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"

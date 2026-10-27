@@ -18,6 +18,24 @@ body {
   color: var(--text);
 }
 
+.page-gutter {
+  padding-inline-start: max(1rem, env(safe-area-inset-left, 0px));
+  padding-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.page-container {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+@media (min-width: 40rem) {
+  .page-gutter {
+    padding-inline-start: max(2rem, env(safe-area-inset-left, 0px));
+    padding-inline-end: max(2rem, env(safe-area-inset-right, 0px));
+  }
+}
+
 .spinner {
   display: flex;
   align-items: center;

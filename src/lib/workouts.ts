@@ -79,13 +79,22 @@ export function applySetWeightChange(
   setNumber: number,
   weight: string | null,
 ): WorkoutSessionSet[] {
-  return sets.map((set) => {
-    if (set.setNumber === setNumber) return { ...set, actualWeight: weight };
-    if (setNumber === 1 && set.actualWeight === null) {
-      return { ...set, actualWeight: weight };
-    }
-    return set;
-  });
+  return sets.map((set) =>
+    set.setNumber === setNumber ? { ...set, actualWeight: weight } : set,
+  );
+}
+
+export function inheritFirstSetWeight(
+  sets: WorkoutSessionSet[],
+): WorkoutSessionSet[] {
+  const firstWeight = sets.find((set) => set.setNumber === 1)?.actualWeight;
+  if (!firstWeight) return sets;
+
+  return sets.map((set) =>
+    set.setNumber > 1 && set.actualWeight === null
+      ? { ...set, actualWeight: firstWeight }
+      : set,
+  );
 }
 
 type WorkoutExerciseRow =

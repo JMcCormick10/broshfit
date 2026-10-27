@@ -180,7 +180,7 @@ export function ProfileLandingPage({
       />
 
       <header className="relative z-30 border-b border-border/70 bg-void/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <div className="page-container page-gutter flex items-center justify-between gap-4 py-4">
           <span className="font-heading text-lg font-bold tracking-[0.18em]">
             BROSHFIT
           </span>
@@ -289,7 +289,7 @@ export function ProfileLandingPage({
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 sm:pt-14">
+      <div className="page-container page-gutter relative z-10 pb-16 pt-10 sm:pt-14">
         {activeView !== "dashboard" && (
           <div className="mb-8">
             <Button
