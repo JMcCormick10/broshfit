@@ -49,7 +49,7 @@ export function DialogShell({
       >
         <header className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] text-secondary uppercase">
+            <p className="text-[10px] font-bold tracking-[0.2em] text-accent uppercase">
               {eyebrow}
             </p>
             <h2 id={titleId} className="mt-2 font-heading text-3xl font-bold">

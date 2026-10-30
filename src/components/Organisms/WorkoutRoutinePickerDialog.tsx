@@ -50,7 +50,7 @@ export function WorkoutRoutinePickerDialog({
       closeDisabled={isStarting}
       closeLabel="Close routine picker"
       description="Choose an active routine to begin."
-      eyebrow="Training bay // start session"
+      eyebrow="Training log // new session"
       onClose={onClose}
       title="Start New Workout"
       titleId="start-workout-heading"

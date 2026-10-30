@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import type { Profile } from "../../lib/database.types";
+import { getProfileCopy } from "../../constants/profile-copy";
 import { Button } from "../Atoms/Button";
 import { Spinner } from "../Atoms/Spinner";
 import { DialogShell } from "../Molecules/DialogShell";
@@ -24,12 +25,14 @@ export function LoginDialog({
   password,
   profile,
 }: LoginDialogProps) {
+  const profileCopy = getProfileCopy(profile.name);
+
   return (
     <DialogShell
       closeDisabled={isSigningIn}
       closeLabel="Close sign-in dialog"
-      description="Enter your profile password to continue."
-      eyebrow="Profile access // secure login"
+      description={profileCopy.loginDescription}
+      eyebrow={profileCopy.loginEyebrow}
       onClose={onClose}
       title={`Sign in as ${profile.name}`}
       titleId="login-heading"

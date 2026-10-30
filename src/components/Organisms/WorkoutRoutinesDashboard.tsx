@@ -92,7 +92,7 @@ export function WorkoutRoutinesDashboard({
     <section aria-labelledby="workout-routines-heading">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
         <div>
-          <p className="mb-2 font-mono text-[10px] font-bold tracking-[0.2em] text-primary uppercase">
+          <p className="mb-2 font-mono text-[10px] font-bold tracking-[0.2em] text-accent uppercase">
             Shared training plans
           </p>
           <h1

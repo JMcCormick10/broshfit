@@ -74,6 +74,63 @@ export type WorkoutSession = {
   exercises: WorkoutSessionExercise[];
 };
 
+export type ProgressExerciseSet = {
+  setNumber: number;
+  actualReps: number | null;
+  actualWeight: string | null;
+};
+
+export type ExerciseProgressEntry = {
+  id: string;
+  exerciseId: string;
+  exerciseName: string;
+  equipment: string;
+  completedAt: string;
+  sets: ProgressExerciseSet[];
+};
+
+export async function getExerciseProgress(): Promise<ExerciseProgressEntry[]> {
+  const client = getSupabaseClient();
+  const [entriesResult, exercisesResult] = await Promise.all([
+    client.from("workout_session_exercises")
+      .select("id, exercise_id, completed_at")
+      .not("completed_at", "is", null)
+      .order("completed_at", { ascending: false }),
+    client.from("exercises").select("id, name, equipment"),
+  ]);
+
+  if (entriesResult.error) throw entriesResult.error;
+  if (exercisesResult.error) throw exercisesResult.error;
+  if (entriesResult.data.length === 0) return [];
+
+  const entryIds = entriesResult.data.map((entry) => entry.id);
+  const setsResult = await client.from("workout_session_sets")
+    .select("session_exercise_id, set_number, actual_reps, actual_weight")
+    .in("session_exercise_id", entryIds)
+    .order("set_number", { ascending: true });
+  if (setsResult.error) throw setsResult.error;
+
+  const exerciseById = new Map(exercisesResult.data.map((exercise) => [exercise.id, exercise]));
+  const setsByEntry = new Map<string, ProgressExerciseSet[]>();
+  for (const set of setsResult.data) {
+    const sets = setsByEntry.get(set.session_exercise_id) ?? [];
+    sets.push({ setNumber: set.set_number, actualReps: set.actual_reps, actualWeight: set.actual_weight });
+    setsByEntry.set(set.session_exercise_id, sets);
+  }
+
+  return entriesResult.data.map((entry) => {
+    const exercise = exerciseById.get(entry.exercise_id);
+    return {
+      id: entry.id,
+      exerciseId: entry.exercise_id,
+      exerciseName: exercise?.name ?? "Exercise unavailable",
+      equipment: exercise?.equipment ?? "",
+      completedAt: entry.completed_at!,
+      sets: setsByEntry.get(entry.id) ?? [],
+    };
+  });
+}
+
 export function applySetWeightChange(
   sets: WorkoutSessionSet[],
   setNumber: number,

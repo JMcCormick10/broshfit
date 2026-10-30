@@ -127,7 +127,7 @@ function App() {
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-void px-6 text-starlight">
-        <Spinner label="Loading your training bay..." />
+        <Spinner label="Loading your training dashboard..." />
       </main>
     );
   }
@@ -156,6 +156,14 @@ function App() {
         selectedProfileId={selectedProfile}
         statusMessage={statusMessage}
       />
+      <div
+        aria-hidden="true"
+        className={`login-beam-scene ${loginProfile ? "login-beam-scene--foreground" : ""}`}
+      >
+        <span className="login-beam login-beam--violet" />
+        <span className="login-beam login-beam--blue" />
+        <span className="login-beam-impact" />
+      </div>
       {loginProfile && (
         <LoginDialog
           error={loginError}

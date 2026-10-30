@@ -26,8 +26,8 @@ export function WorkoutHistoryPage() {
   return (
     <section aria-labelledby="workout-history-heading">
       <div className="border-b border-border pb-5">
-        <p className="mb-2 font-mono text-[10px] font-bold tracking-[0.2em] text-secondary uppercase">
-          Training bay // completed sessions
+        <p className="mb-2 font-mono text-[10px] font-bold tracking-[0.2em] text-accent uppercase">
+          Training log // completed sessions
         </p>
         <h1
           id="workout-history-heading"

@@ -61,7 +61,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   "dashboard-secondary":
     "flex w-full min-h-16 items-center justify-between gap-4 rounded-md border border-secondary/50 bg-surface/70 px-5 py-4 text-left font-heading text-xl font-bold text-starlight transition hover:border-secondary hover:bg-surface",
   "dashboard-routine":
-    "flex w-full min-h-16 items-center justify-between gap-4 rounded-md border border-primary/50 bg-surface/70 px-5 py-4 text-left font-heading text-xl font-bold text-starlight transition hover:border-primary hover:bg-surface",
+    "flex w-full min-h-16 items-center justify-between gap-4 rounded-md border border-accent/50 bg-surface/70 px-5 py-4 text-left font-heading text-xl font-bold text-starlight transition hover:border-accent hover:bg-surface",
   icon: "inline-flex size-8 items-center justify-center rounded border border-border text-muted-steel transition hover:text-starlight disabled:opacity-30",
   "icon-danger":
     "inline-flex size-8 items-center justify-center rounded border border-border text-muted-steel transition hover:border-danger/50 hover:text-danger",
@@ -83,14 +83,14 @@ const variantClasses: Record<ButtonVariant, string> = {
 function getSelectedClasses(variant: ButtonVariant, selected: boolean) {
   if (variant === "tab") {
     return selected
-      ? "border-primary text-starlight"
+      ? "border-accent text-starlight"
       : "border-transparent text-muted-steel hover:text-starlight";
   }
 
   if (variant === "profile") {
     return selected
-      ? "border-primary/70 bg-primary/5 shadow-[0_0_24px_rgba(255,159,28,0.09)]"
-      : "border-border bg-void/60 hover:border-secondary/50 hover:bg-void";
+      ? "border-accent/70 bg-accent/5 shadow-[0_0_24px_color-mix(in_srgb,var(--accent)_12%,transparent)]"
+      : "border-border bg-void/60 hover:border-accent/50 hover:bg-void";
   }
 
   if (variant === "session-exercise") {
@@ -109,7 +109,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={`focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${variantClasses[variant]} ${getSelectedClasses(variant, selected)}`}
+      className={`focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${variantClasses[variant]} ${getSelectedClasses(variant, selected)}`}
       type={type}
     />
   );

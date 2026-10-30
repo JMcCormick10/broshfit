@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="19" y1="10" x2="235" y2="244" gradientUnits="userSpaceOnUse"><stop stop-color="#102939"/><stop offset="1" stop-color="#090C12"/></linearGradient>
+    <linearGradient id="armor" x1="79" y1="130" x2="180" y2="252" gradientUnits="userSpaceOnUse"><stop stop-color="#64798A"/><stop offset="1" stop-color="#202A35"/></linearGradient>
+    <linearGradient id="blade" x1="204" y1="43" x2="206" y2="197" gradientUnits="userSpaceOnUse"><stop stop-color="#F1FCFF"/><stop offset=".35" stop-color="#35B8FF"/><stop offset="1" stop-color="#1687D1"/></linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(0 125 -125 0 128 124)" gradientUnits="userSpaceOnUse"><stop stop-color="#35B8FF" stop-opacity=".34"/><stop offset="1" stop-color="#35B8FF" stop-opacity="0"/></radialGradient>
+    <clipPath id="clip"><rect width="256" height="256" rx="40"/></clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <path fill="url(#bg)" d="M0 0h256v256H0z"/><path fill="url(#glow)" d="M0 0h256v256H0z"/>
+    <path stroke="#35B8FF" stroke-opacity=".22" d="M16 56h34M206 198h34M31 219h24M201 34h24"/>
+    <circle cx="128" cy="120" r="84" stroke="#35B8FF" stroke-opacity=".3" stroke-dasharray="3 8"/>
+    <path fill="url(#armor)" stroke="#83D7FF" stroke-opacity=".75" stroke-width="3" d="m50 270 23-72c8-26 27-40 55-40s47 14 55 40l23 72H50Z"/>
+    <path fill="#151B26" stroke="#6F899D" stroke-width="3" d="m96 158 32 28 32-28 16 19-25 37h-46l-25-37 16-19Z"/>
+    <path fill="#C99F80" stroke="#342B2B" stroke-width="3" d="M94 100c0-28 15-47 34-47s34 19 34 47v32c0 23-15 39-34 39s-34-16-34-39v-32Z"/>
+    <path fill="#34261F" stroke="#171719" stroke-width="4" stroke-linejoin="round" d="M88 104c-3-27 7-52 29-61 23-9 49 0 60 22 5 10 6 22 2 35l-14-9c-11 3-21-2-27-11-9 12-25 20-43 20l-7 16Z"/>
+    <path fill="#604332" d="M91 91c8-7 18-13 30-18-4 11-12 21-23 27l-7-9Zm70-12c8 5 14 12 19 21l-10 7c-7-6-11-15-9-28Z"/>
+    <path stroke="#A17C62" stroke-opacity=".8" stroke-width="3" stroke-linecap="round" d="m103 69 18-13m13 1 7 13m13-3 12 12"/>
+    <path stroke="#101820" stroke-linecap="round" stroke-width="4" d="M108 122h8m24 0h8"/>
+    <path stroke="#6E443A" stroke-linecap="round" stroke-width="3" d="M118 146c6 4 12 4 18 0"/>
+    <path stroke="#A9C1CE" stroke-linecap="round" stroke-width="10" d="m200 177 17 5"/>
+    <path stroke="url(#blade)" stroke-linecap="round" stroke-width="9" d="m208 176 2-125"/><path stroke="#D9F7FF" stroke-linecap="round" stroke-width="2" d="m210 164 2-100"/>
+    <path stroke="#35B8FF" stroke-opacity=".5" stroke-width="2" d="m195 72-9 6m28-38 9-6m-5 113 10 4"/>
+    <path fill="#202A35" stroke="#9FB7C7" stroke-width="2" d="m78 193 18-17 14 10-11 27-25-6 4-14Zm99-7 14 5 5 17-25 6-11-27 14-10 3 9Z"/>
+    <path fill="#35B8FF" d="m179 70 10-3 2 10-9 2-3-9Z"/>
+    <rect x="14" y="14" width="228" height="228" rx="32" stroke="#35B8FF" stroke-opacity=".65" stroke-width="2"/>
+  </g>
+</svg>

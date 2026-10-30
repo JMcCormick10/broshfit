@@ -1,6 +1,6 @@
 # Broshfit
 
-Broshfit is a React + TypeScript fitness app built with Vite, Tailwind CSS, Supabase, and a generated PWA manifest/service worker.
+Broshfit is a strength-training log built with React, TypeScript, Vite, Tailwind CSS, and Supabase. Its visual identity uses an original training emblem and high-energy orange/blue palette.
 
 ## Run locally
 
@@ -27,6 +27,6 @@ The `.env*` files are ignored by Git except `.env.example`; do not commit local 
 
 ## PWA
 
-Production builds generate a manifest and service worker. The PWA uses icons derived from `src/assets/logo.png`; install it from the browser's install option (or **Add to Home Screen** on iOS). The service worker caches the app shell and build assets; Supabase data operations still require a network connection.
+Production builds generate a manifest and service worker. The PWA uses icons derived from `public/new-logo.png`; install it from the browser's install option (or **Add to Home Screen** on iOS). The service worker caches the app shell and build assets; Supabase data operations still require a network connection.
 
 Run `npm run build` and `npm run preview` to test the production PWA locally. Service workers require HTTPS except on localhost.

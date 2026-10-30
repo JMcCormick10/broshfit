@@ -14,7 +14,6 @@ import {
   type WorkoutSession,
   type WorkoutRoutine,
 } from "../../lib/workouts";
-import { getProfileAvatarUrl } from "../../lib/profiles";
 import { Spinner } from "../Atoms/Spinner";
 import { WorkoutRoutinePickerDialog } from "./WorkoutRoutinePickerDialog";
 import { ActiveWorkoutDashboard } from "./ActiveWorkoutDashboard";
@@ -22,6 +21,10 @@ import { WorkoutHistoryPage } from "./WorkoutHistoryPage";
 import { CompletedWorkoutEditorDialog } from "./CompletedWorkoutEditorDialog";
 import { useAsyncData } from "../../hooks/useAsyncData";
 import { Toast } from "../Atoms/Toast";
+import { getProfileAvatarUrl } from "../../lib/profile-avatar";
+import { getProfileTheme } from "../../lib/profile-theme";
+import { getProfileCopy } from "../../constants/profile-copy";
+import { ExerciseProgressPage } from "./ExerciseProgressPage";
 
 type ProfileLandingPageProps = {
   isSigningOut: boolean;
@@ -37,8 +40,11 @@ export function ProfileLandingPage({
   profile,
 }: ProfileLandingPageProps) {
   const [activeView, setActiveView] = useState<
-    "dashboard" | "exercises" | "workout-routines" | "workout-history"
+    "dashboard" | "exercises" | "workout-routines" | "workout-history" | "progress"
   >("dashboard");
+  const profileAvatarUrl = getProfileAvatarUrl(profile.name);
+  const profileTheme = getProfileTheme(profile.name);
+  const profileCopy = getProfileCopy(profile.name);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isExerciseDialogOpen, setIsExerciseDialogOpen] = useState(false);
   const [isWorkoutDialogOpen, setIsWorkoutDialogOpen] = useState(false);
@@ -69,6 +75,20 @@ export function ProfileLandingPage({
   );
   const [completedWorkoutToEdit, setCompletedWorkoutToEdit] =
     useState<CompletedWorkoutSummary | null>(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (profileTheme) {
+      root.dataset.theme = profileTheme;
+    } else {
+      delete root.dataset.theme;
+    }
+
+    return () => {
+      delete root.dataset.theme;
+    };
+  }, [profileTheme]);
 
   useEffect(() => {
     let isMounted = true;
@@ -167,7 +187,7 @@ export function ProfileLandingPage({
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-void text-starlight">
+    <main className="relative min-h-screen overflow-hidden bg-transparent text-starlight">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-70"
@@ -181,15 +201,23 @@ export function ProfileLandingPage({
 
       <header className="relative z-30 border-b border-border/70 bg-void/80">
         <div className="page-container page-gutter flex items-center justify-between gap-4 py-4">
-          <span className="font-heading text-lg font-bold tracking-[0.18em]">
+          <button
+            type="button"
+            onClick={() => {
+              setExerciseNotice(null);
+              setActiveView("dashboard");
+            }}
+            aria-label="Go to dashboard"
+            className="font-heading text-lg font-bold tracking-[0.18em] transition hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+          >
             BROSHFIT
-          </span>
+          </button>
           <div className="flex items-center gap-3 sm:gap-5">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-10 items-center justify-center overflow-hidden rounded-md border border-border bg-surface font-heading text-lg font-bold text-primary">
-                {profile.avatar_url ? (
+              <span className="flex size-10 items-center justify-center overflow-hidden rounded-md border border-accent/50 bg-surface font-heading text-lg font-bold text-accent">
+                {profileAvatarUrl ? (
                   <img
-                    src={getProfileAvatarUrl(profile.avatar_url) ?? undefined}
+                    src={profileAvatarUrl}
                     alt=""
                     className="size-full object-cover"
                   />
@@ -202,7 +230,7 @@ export function ProfileLandingPage({
                   {profile.name}
                 </span>
                 <span className="font-mono text-[9px] tracking-[0.12em] text-muted-steel">
-                  {profile.label}
+                  {profileCopy.label}
                 </span>
               </span>
             </div>
@@ -270,6 +298,17 @@ export function ProfileLandingPage({
                   >
                     Workout History
                   </Button>
+                  <Button
+                    variant="menu-item"
+                    onClick={() => {
+                      setExerciseNotice(null);
+                      setActiveView("progress");
+                      setIsMenuOpen(false);
+                    }}
+                    type="button"
+                  >
+                    View Progress
+                  </Button>
                   <div className="my-1 border-t border-border" />
                   <Button
                     variant="menu-item-muted"
@@ -289,8 +328,8 @@ export function ProfileLandingPage({
         </div>
       </header>
 
-      <div className="page-container page-gutter relative z-10 pb-16 pt-10 sm:pt-14">
-        {activeView !== "dashboard" && (
+      <div className={`page-container page-gutter relative z-10 pb-16 ${activeView === "progress" ? "pt-6 sm:pt-8" : "pt-10 sm:pt-14"}`}>
+        {activeView !== "dashboard" && activeView !== "progress" && (
           <div className="mb-8">
             <Button
               variant="outline"
@@ -339,17 +378,17 @@ export function ProfileLandingPage({
           ) : (
             <>
               <section aria-labelledby="dashboard-heading">
-                <p className="mb-3 font-mono text-[10px] font-bold tracking-[0.2em] text-primary uppercase">
-                  Training bay // crew dashboard
+                <p className="mb-3 font-mono text-[10px] font-bold tracking-[0.2em] text-accent uppercase">
+                  {profileCopy.dashboardEyebrow}
                 </p>
                 <h1
                   id="dashboard-heading"
                   className="font-heading text-4xl leading-none font-bold sm:text-5xl"
                 >
-                  Welcome, {profile.name}.
+                  {profileCopy.dashboardGreeting}
                 </h1>
                 <p className="mt-3 text-sm text-muted-steel">
-                  Your next session starts here.
+                  {profileCopy.dashboardPrompt}
                 </p>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -358,7 +397,7 @@ export function ProfileLandingPage({
                     onClick={() => setIsRoutinePickerOpen(true)}
                     type="button"
                   >
-                    <span>Start New Workout</span>
+                    <span>{profileCopy.startWorkoutLabel}</span>
                     <span aria-hidden="true" className="text-2xl leading-none">
                       +
                     </span>
@@ -472,8 +511,10 @@ export function ProfileLandingPage({
             onEdit={openEditWorkoutDialog}
             refreshKey={workoutListVersion}
           />
-        ) : (
+        ) : activeView === "workout-history" ? (
           <WorkoutHistoryPage />
+        ) : (
+          <ExerciseProgressPage profileCopy={profileCopy} profileName={profile.name} />
         )}
       </div>
       {isExerciseDialogOpen && (

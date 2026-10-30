@@ -29,6 +29,359 @@ body {
   margin-inline: auto;
 }
 
+.login-beam-scene {
+  position: fixed;
+  z-index: 12;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.login-beam-scene--foreground {
+  z-index: 51;
+}
+
+.login-beam {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vmax;
+  height: 16px;
+  transform-origin: left center;
+  animation:
+    login-beam-pulse 3.6s ease-in-out infinite,
+    login-beam-length-violet 3.6s ease-in-out infinite;
+}
+
+.login-beam::before,
+.login-beam::after {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.login-beam::before {
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(
+    90deg,
+    white,
+    rgb(255 255 255 / 96%) 72%,
+    rgb(255 255 255 / 78%) 94%,
+    transparent
+  );
+  animation: login-beam-core-pulse 3.6s ease-in-out infinite;
+}
+
+.login-beam::after {
+  width: 100%;
+  height: 88px;
+  background: linear-gradient(
+    90deg,
+    currentColor,
+    currentColor 62%,
+    transparent
+  );
+  opacity: 0.2;
+  filter: blur(24px);
+  animation: login-beam-glow-pulse 3.6s ease-in-out infinite;
+}
+
+.login-beam--violet {
+  color: #a855f7;
+  transform: rotate(-45deg);
+}
+
+.login-beam--blue {
+  color: #38bdf8;
+  transform: rotate(135deg);
+  animation-name: login-beam-pulse, login-beam-length-blue;
+  animation-delay:
+    -1.8s,
+    -1.8s;
+}
+
+.login-beam--blue::before,
+.login-beam--blue::after {
+  animation-delay: -1.8s;
+}
+
+@property --impact-violet-energy {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.6;
+}
+
+@property --impact-blue-energy {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.6;
+}
+
+.login-beam-impact {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 2.304rem;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 0 6px rgb(255 255 255 / 88%));
+  transform: translate(-50%, -50%);
+  animation: login-beam-impact 3.6s ease-in-out infinite;
+}
+
+.login-beam-impact::before,
+.login-beam-impact::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.login-beam-impact::before {
+  width: 5.4rem;
+  height: 2.4rem;
+  border-radius: 58% 42% 56% 44% / 45% 57% 43% 55%;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgb(255 255 255 / 96%) 0 8%,
+      transparent 48%
+    ),
+    linear-gradient(
+      90deg,
+      transparent,
+      rgb(56 189 248 / var(--impact-blue-energy)) 26%,
+      white 50%,
+      rgb(168 85 247 / var(--impact-violet-energy)) 74%,
+      transparent
+    );
+  filter: blur(3px);
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  animation: login-beam-impact-morph 3.6s ease-in-out infinite;
+}
+
+.login-beam-impact::after {
+  width: clamp(9rem, 22vw, 22rem);
+  aspect-ratio: 1;
+  background:
+    conic-gradient(
+      transparent 0deg 5deg,
+      rgb(168 85 247 / 42%) 6deg,
+      rgb(168 85 247 / 95%) 8deg,
+      rgb(168 85 247 / 42%) 10deg,
+      transparent 11deg 19deg,
+      rgb(168 85 247 / 30%) 20deg,
+      rgb(168 85 247 / 82%) 22deg,
+      rgb(168 85 247 / 30%) 24deg,
+      transparent 25deg 33deg,
+      rgb(168 85 247 / 40%) 34deg,
+      rgb(168 85 247 / 95%) 37deg,
+      rgb(168 85 247 / 40%) 40deg,
+      transparent 41deg 49deg,
+      rgb(168 85 247 / 30%) 50deg,
+      rgb(168 85 247 / 82%) 52deg,
+      rgb(168 85 247 / 30%) 54deg,
+      transparent 55deg 63deg,
+      rgb(168 85 247 / 40%) 64deg,
+      rgb(168 85 247 / 95%) 67deg,
+      rgb(168 85 247 / 40%) 70deg,
+      transparent 71deg 185deg,
+      rgb(56 189 248 / 42%) 186deg,
+      rgb(56 189 248 / 95%) 188deg,
+      rgb(56 189 248 / 42%) 190deg,
+      transparent 191deg 201deg,
+      rgb(56 189 248 / 30%) 202deg,
+      rgb(56 189 248 / 82%) 204deg,
+      rgb(56 189 248 / 30%) 206deg,
+      transparent 207deg 217deg,
+      rgb(56 189 248 / 40%) 218deg,
+      rgb(56 189 248 / 95%) 221deg,
+      rgb(56 189 248 / 40%) 224deg,
+      transparent 225deg 235deg,
+      rgb(56 189 248 / 30%) 236deg,
+      rgb(56 189 248 / 82%) 238deg,
+      rgb(56 189 248 / 30%) 240deg,
+      transparent 241deg 251deg,
+      rgb(56 189 248 / 40%) 252deg,
+      rgb(56 189 248 / 95%) 255deg,
+      rgb(56 189 248 / 40%) 258deg,
+      transparent 259deg 360deg
+    ),
+    conic-gradient(
+      rgb(168 85 247 / 40%) 0deg,
+      rgb(168 85 247 / 100%) 45deg,
+      rgb(168 85 247 / 40%) 90deg,
+      transparent 110deg 180deg,
+      rgb(56 189 248 / 40%) 192deg,
+      rgb(56 189 248 / 100%) 225deg,
+      rgb(56 189 248 / 40%) 258deg,
+      transparent 270deg 350deg,
+      rgb(168 85 247 / 40%) 360deg
+    );
+  filter: drop-shadow(0 0 14px rgb(255 255 255 / 65%));
+  mask: radial-gradient(
+    circle,
+    transparent 0 9%,
+    #000 20% 40%,
+    transparent 72%
+  );
+  transform: translate(-50%, -50%) scale(0.82);
+  animation: login-beam-impact-flare 1.8s ease-in-out infinite;
+}
+
+@keyframes login-beam-pulse {
+  0%,
+  100% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 22px currentColor);
+  }
+}
+
+@keyframes login-beam-length-violet {
+  0%,
+  100% {
+    left: calc(50% + 7.071vmax);
+    top: calc(50% - 7.071vmax);
+    width: 90vmax;
+  }
+
+  50% {
+    left: calc(50% - 7.071vmax);
+    top: calc(50% + 7.071vmax);
+    width: 110vmax;
+  }
+}
+
+@keyframes login-beam-length-blue {
+  0%,
+  100% {
+    left: calc(50% - 7.071vmax);
+    top: calc(50% + 7.071vmax);
+    width: 90vmax;
+  }
+
+  50% {
+    left: calc(50% + 7.071vmax);
+    top: calc(50% - 7.071vmax);
+    width: 110vmax;
+  }
+}
+
+@keyframes login-beam-core-pulse {
+  0%,
+  100% {
+    height: 10px;
+  }
+
+  50% {
+    height: 16px;
+  }
+}
+
+@keyframes login-beam-glow-pulse {
+  0%,
+  100% {
+    height: 68px;
+    opacity: 0.25;
+  }
+
+  50% {
+    height: 120px;
+    opacity: 0.5;
+  }
+}
+
+@keyframes login-beam-impact {
+  0%,
+  100% {
+    top: calc(50% - 7.071vmax);
+    left: calc(50% + 7.071vmax);
+    --impact-violet-energy: 0.4;
+    --impact-blue-energy: 0.9;
+    opacity: 1;
+    filter: drop-shadow(0 0 30px rgb(255 255 255 / 100%));
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+
+  25%,
+  75% {
+    top: 50%;
+    left: 50%;
+    --impact-violet-energy: 0.65;
+    --impact-blue-energy: 0.65;
+    opacity: 0.92;
+    filter: drop-shadow(0 0 6px rgb(255 255 255 / 88%));
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+
+  50% {
+    top: calc(50% + 7.071vmax);
+    left: calc(50% - 7.071vmax);
+    --impact-violet-energy: 0.9;
+    --impact-blue-energy: 0.4;
+    opacity: 1;
+    filter: drop-shadow(0 0 30px rgb(255 255 255 / 100%));
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+}
+
+@keyframes login-beam-impact-morph {
+  0%,
+  100% {
+    border-radius: 68% 32% 56% 44% / 43% 61% 39% 57%;
+  }
+
+  25%,
+  75% {
+    border-radius: 48% 52% 62% 38% / 56% 42% 58% 44%;
+  }
+
+  50% {
+    border-radius: 34% 66% 45% 55% / 45% 62% 38% 55%;
+  }
+}
+
+@keyframes login-beam-impact-flare {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-beam,
+  .login-beam-impact {
+    animation: none;
+  }
+
+  .login-beam::before,
+  .login-beam::after {
+    animation: none;
+  }
+
+  .login-beam-impact::before,
+  .login-beam-impact::after {
+    animation: none;
+  }
+}
+
 .dialog-surface :is(input, select, textarea) {
   min-width: 0;
   max-width: 100%;

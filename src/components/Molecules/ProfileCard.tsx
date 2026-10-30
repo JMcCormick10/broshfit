@@ -1,5 +1,6 @@
 import type { Profile } from "../../lib/database.types";
-import { getProfileAvatarUrl } from "../../lib/profiles";
+import { getProfileCopy } from "../../constants/profile-copy";
+import { getProfileAvatarUrl } from "../../lib/profile-avatar";
 import { Button } from "../Atoms/Button";
 
 const accentClasses: Record<Profile["accent"], string> = {
@@ -19,6 +20,9 @@ export function ProfileCard({
   onSelect,
   profile,
 }: ProfileCardProps) {
+  const avatarUrl = getProfileAvatarUrl(profile.name);
+  const profileCopy = getProfileCopy(profile.name);
+
   return (
     <Button
       variant="profile"
@@ -30,12 +34,8 @@ export function ProfileCard({
       <span
         className={`flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-current/25 bg-surface ${accentClasses[profile.accent]}`}
       >
-        {profile.avatar_url ? (
-          <img
-            src={getProfileAvatarUrl(profile.avatar_url) ?? undefined}
-            alt=""
-            className="size-full object-cover"
-          />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-full object-cover" />
         ) : (
           <span className="font-heading text-2xl font-bold">
             {profile.initial}
@@ -45,7 +45,7 @@ export function ProfileCard({
       <span className="min-w-0 flex-1">
         <span className="font-heading text-xl font-bold">{profile.name}</span>
         <span className="mt-0.5 block font-mono text-[9px] tracking-[0.12em] text-muted-steel">
-          {profile.label}
+          {profileCopy.label}
         </span>
       </span>
       <span

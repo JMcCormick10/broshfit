@@ -26,7 +26,7 @@ Use npm for package management and keep `package-lock.json` in sync when depende
 
 - Write application code in TypeScript and React function components. Preserve the existing strict TypeScript settings and avoid `any` unless there is a clear reason.
 - Prefer Tailwind utility classes for component styling. Keep global styles and base element rules in `src/index.css`; Tailwind is loaded there and configured through `vite.config.ts`.
-- Treat `src/constants/theme.css` as the source of truth for Galactic Saiyan design tokens. Reuse its CSS variables or Tailwind color utilities instead of repeating hex values; keep dark neutrals dominant, orange primary, and blue supporting. Reserve red for exceptional achievements, green for success, and glow effects for special moments.
+- Treat `src/constants/theme.css` as the source of truth for Broshfit's strength-training design tokens. Reuse its CSS variables or Tailwind color utilities instead of repeating hex values; keep dark neutrals dominant, energetic orange primary, and electric blue supporting. Reserve red for exceptional achievements, green for success, and glow effects for special moments.
 - Put reusable application code under `src/`; put shared integrations/helpers in `src/lib/`.
 - Organize UI components under `src/components/`: `Atoms/` for small reusable pieces such as buttons, inputs, and headings; `Molecules/` for components composed from smaller pieces; and `Organisms/` for larger page sections composed from molecules and atoms. Keep these directories empty until components are needed.
 - `src/App.css` is currently leftover Vite-template CSS and is not imported by the app. Prefer Tailwind for new component styles; only revive or remove that file when there is a deliberate reason.
