@@ -40,7 +40,7 @@ export type CompletedWorkoutExerciseUpdate = {
   sets: {
     setNumber: number;
     actualReps: number | null;
-    actualWeight: string | null;
+    actualWeight: number | null;
   }[];
   notes: string;
   completedOrder: number;
@@ -50,7 +50,7 @@ export type WorkoutSessionSet = {
   setNumber: number;
   targetReps: string | null;
   actualReps: number | null;
-  actualWeight: string | null;
+  actualWeight: number | null;
 };
 
 export type WorkoutSessionExercise = {
@@ -77,7 +77,7 @@ export type WorkoutSession = {
 export type ProgressExerciseSet = {
   setNumber: number;
   actualReps: number | null;
-  actualWeight: string | null;
+  actualWeight: number | null;
 };
 
 export type ExerciseProgressEntry = {
@@ -89,14 +89,22 @@ export type ExerciseProgressEntry = {
   sets: ProgressExerciseSet[];
 };
 
-export async function getExerciseProgress(): Promise<ExerciseProgressEntry[]> {
+export async function getExerciseProgress(
+  exerciseId?: string,
+): Promise<ExerciseProgressEntry[]> {
   const client = getSupabaseClient();
+  const entriesQuery = client
+    .from("workout_session_exercises")
+    .select("id, exercise_id, completed_at")
+    .not("completed_at", "is", null);
+  const exercisesQuery = client
+    .from("exercises")
+    .select("id, name, equipment");
   const [entriesResult, exercisesResult] = await Promise.all([
-    client.from("workout_session_exercises")
-      .select("id, exercise_id, completed_at")
-      .not("completed_at", "is", null)
-      .order("completed_at", { ascending: false }),
-    client.from("exercises").select("id, name, equipment"),
+    exerciseId
+      ? entriesQuery.eq("exercise_id", exerciseId).order("completed_at", { ascending: false })
+      : entriesQuery.order("completed_at", { ascending: false }),
+    exerciseId ? exercisesQuery.eq("id", exerciseId) : exercisesQuery,
   ]);
 
   if (entriesResult.error) throw entriesResult.error;
@@ -134,7 +142,7 @@ export async function getExerciseProgress(): Promise<ExerciseProgressEntry[]> {
 export function applySetWeightChange(
   sets: WorkoutSessionSet[],
   setNumber: number,
-  weight: string | null,
+  weight: number | null,
 ): WorkoutSessionSet[] {
   return sets.map((set) =>
     set.setNumber === setNumber ? { ...set, actualWeight: weight } : set,
@@ -144,8 +152,9 @@ export function applySetWeightChange(
 export function inheritFirstSetWeight(
   sets: WorkoutSessionSet[],
 ): WorkoutSessionSet[] {
-  const firstWeight = sets.find((set) => set.setNumber === 1)?.actualWeight;
-  if (!firstWeight) return sets;
+  const firstWeight =
+    sets.find((set) => set.setNumber === 1)?.actualWeight ?? null;
+  if (firstWeight === null) return sets;
 
   return sets.map((set) =>
     set.setNumber > 1 && set.actualWeight === null
@@ -453,7 +462,7 @@ export async function getWorkoutSession(
 export type ExerciseHistorySet = {
   setNumber: number;
   actualReps: number | null;
-  actualWeight: string | null;
+  actualWeight: number | null;
 };
 
 export type ExerciseHistory = {
@@ -620,48 +629,41 @@ export async function getExerciseHistory(
   if (primaryMuscleGroups.length > 0 || secondaryMuscleGroups.length > 0) {
     const parts: string[] = [];
     if (primaryMuscleGroups.length > 0) {
-      parts.push(
-        `primarily works your ${formatMuscleList(primaryMuscleGroups)}`,
-      );
+      parts.push(`targets your ${formatMuscleList(primaryMuscleGroups)}`);
     }
     if (secondaryMuscleGroups.length > 0) {
       parts.push(
         primaryMuscleGroups.length > 0
-          ? `with ${formatMuscleList(secondaryMuscleGroups)} assisting`
-          : `works your ${formatMuscleList(secondaryMuscleGroups)} as secondary muscles`,
+          ? `with ${formatMuscleList(secondaryMuscleGroups)} helping out`
+          : `also works your ${formatMuscleList(secondaryMuscleGroups)}`,
       );
     }
-    contextSentences.push(`This exercise ${parts.join(", ")}.`);
+    contextSentences.push(`This move ${parts.join(", ")}.`);
   }
 
   if (priorExercises.length > 0) {
     contextSentences.push(
       priorsWithShared.length > 0
-        ? `Last workout, ${priorsWithShared.length} of the ${priorExercises.length} exercise${priorExercises.length === 1 ? "" : "s"} you completed first also worked your ${formatMuscleList(sharedMuscleNames)}.`
-        : "None of the exercises you completed before it that day worked the same muscles.",
+        ? `${priorsWithShared.length} of the ${priorExercises.length} earlier exercise${priorExercises.length === 1 ? "" : "s"} also worked your ${formatMuscleList(sharedMuscleNames)}.`
+        : "The earlier exercises didn't hit the same muscles.",
     );
   } else {
-    contextSentences.push("It was the first exercise you completed that day.");
+    contextSentences.push("You opened with this exercise.");
   }
 
   if (lastEntry.completed_order !== null) {
-    const thatDay = `the ${formatOrdinal(lastEntry.completed_order)} exercise you completed that day`;
-    const today =
-      currentPosition === 1
-        ? "doing it first this session"
-        : `doing it ${formatOrdinal(currentPosition)} this session`;
     contextSentences.push(
       lastEntry.completed_order === currentPosition
-        ? `It was ${thatDay}, same as this session.`
-        : `It was ${thatDay}, compared to ${today}.`,
+        ? `You did this ${formatOrdinal(currentPosition)} last time, and you're doing it in the same spot today.`
+        : `You did this ${formatOrdinal(lastEntry.completed_order)} last time; you're doing it ${formatOrdinal(currentPosition)} today.`,
     );
   }
 
   if (currentPosition > 1) {
     contextSentences.push(
       currentSharedNames.length > 0
-        ? `This session you've already worked your ${formatMuscleList(currentSharedNames)}.`
-        : "This session you haven't worked these muscles yet.",
+        ? `So far this session, you've worked your ${formatMuscleList(currentSharedNames)}.`
+        : "You haven't trained these muscles yet this session.",
     );
   }
 

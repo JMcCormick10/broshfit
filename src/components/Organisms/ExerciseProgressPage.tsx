@@ -6,7 +6,10 @@ import {
   useExerciseProgress,
   type ProgressRange,
 } from "../../hooks/useExerciseProgress";
-import { useExerciseProgressInsights } from "../../hooks/useExerciseProgressInsights";
+import {
+  getPercentChangeTrend,
+  useExerciseProgressInsights,
+} from "../../hooks/useExerciseProgressInsights";
 import type { ProfileCopy } from "../../constants/profile-copy";
 import { CharacterChat } from "../Molecules/CharacterChat";
 import { ProgressChangeBadge } from "../Molecules/ProgressChangeBadge";
@@ -109,13 +112,29 @@ export function ExerciseProgressPage({
               <ProgressSummaryCard
                 label="Best progress"
                 item={insights.bestProgress}
-                empty="Not enough comparable sessions in this range yet."
+                empty={
+                  insights.exerciseBreakdown.improved +
+                    insights.exerciseBreakdown.declined +
+                    insights.exerciseBreakdown.steady +
+                    insights.exerciseBreakdown.mixed ===
+                  0
+                    ? "Not enough comparable sessions in this range yet."
+                    : "No notable improvement in this range."
+                }
                 onSelect={progress.setSelectedExerciseId}
               />
               <ProgressSummaryCard
                 label="Needs attention"
                 item={insights.worstProgress}
-                empty="Not enough comparable sessions in this range yet."
+                empty={
+                  insights.exerciseBreakdown.improved +
+                    insights.exerciseBreakdown.declined +
+                    insights.exerciseBreakdown.steady +
+                    insights.exerciseBreakdown.mixed ===
+                  0
+                    ? "Not enough comparable sessions in this range yet."
+                    : "No notable decline in this range."
+                }
                 onSelect={progress.setSelectedExerciseId}
               />
             </div>
@@ -249,32 +268,59 @@ function ExerciseDetail({
             </Button>
           ))}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <ProgressMetricCard
             label="Sessions"
             value={String(insights.selectedEntries.length)}
           />
           <ProgressMetricCard
-            label="Best estimated 1RM"
+            label="Best estimated 1RM (lb)"
             value={
               insights.rangeBest === null
                 ? "—"
-                : `${Math.round(insights.rangeBest)}`
+                : `${Math.round(insights.rangeBest)} lb`
             }
           />
           <ProgressMetricCard
-            label="Progress · selected range"
+            label="Volume load change"
+            tone={
+              getPercentChangeTrend(insights.volumeLoadPercentChange) === "up"
+                ? "success"
+                : getPercentChangeTrend(insights.volumeLoadPercentChange) ===
+                    "down"
+                  ? "danger"
+                  : "primary"
+            }
             value={
-              insights.change === null
+              insights.volumeLoadPercentChange === null
                 ? "—"
-                : `${insights.change >= 0 ? "+" : ""}${Math.round(insights.change)}`
+                : `${insights.volumeLoadPercentChange > 0 ? "+" : ""}${insights.volumeLoadPercentChange.toFixed(1)}%`
+            }
+          />
+          <ProgressMetricCard
+            label="Heaviest load change (lb)"
+            tone={
+              insights.heaviestLoadChange === null ||
+              insights.heaviestLoadChange === 0
+                ? "primary"
+                : insights.heaviestLoadChange > 0
+                  ? "success"
+                  : "danger"
+            }
+            value={
+              insights.heaviestLoadChange === null
+                ? "—"
+                : `${insights.heaviestLoadChange > 0 ? "+" : ""}${Number.isInteger(insights.heaviestLoadChange) ? insights.heaviestLoadChange : insights.heaviestLoadChange.toFixed(1)} lb`
             }
           />
         </div>
         <p className="mt-3 text-xs leading-relaxed text-muted-steel">
-          Estimated one rep max uses the Epley formula: weight × (1 + reps ÷
-          30). Estimates are shown in the same units as your logged weights.
-          Progress compares your earliest and strongest logged estimates.
+          All logged weights are in pounds. Estimated one rep max uses the
+          Epley formula: lb × (1 + reps ÷ 30).
+          e1RM uses the best set in each session. Increases of 0.1% or more
+          count as positive; decreases up to 2% count as steady. Volume load is
+          lb × reps summed across the session. Each metric compares its
+          earliest and latest sessions with usable data.
         </p>
       </div>
       <ProgressTrendChart entries={insights.selectedEntries} />

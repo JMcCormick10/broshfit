@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Button } from "../Atoms/Button";
 import { Spinner } from "../Atoms/Spinner";
+import { WeightInput } from "../Atoms/WeightInput";
 import { DialogShell } from "../Molecules/DialogShell";
 import { ConfirmationDialog } from "../Molecules/ConfirmationDialog";
 import { FormField } from "../Molecules/FormField";
@@ -24,6 +26,7 @@ export function CompletedWorkoutEditorDialog({
   onSaved,
   workout,
 }: CompletedWorkoutEditorDialogProps) {
+  const [openExerciseKey, setOpenExerciseKey] = useState<string | null>(null);
   const {
     clearConfirmation,
     completedAt,
@@ -88,13 +91,16 @@ export function CompletedWorkoutEditorDialog({
           </FormField>
 
           <ol className="mt-6 divide-y divide-border border-y border-border">
-            {exercises.map((exercise, index) => (
-              <li
-                className={`py-4 transition ${exerciseDrag.draggingId === exercise.id ? "opacity-50" : ""} ${exerciseDrag.dropTarget?.itemId === exercise.id ? "rounded ring-1 ring-secondary/60" : ""}`}
-                data-history-exercise={exercise.id}
-                key={exercise.key}
-              >
-                <div className="flex items-start justify-between gap-3">
+            {exercises.map((exercise, index) => {
+              const isExpanded = openExerciseKey === exercise.key;
+              const detailsId = `completed-exercise-${exercise.id}-details`;
+
+              return (
+                <li
+                  className={`py-2 transition ${exerciseDrag.draggingId === exercise.id ? "opacity-50" : ""} ${exerciseDrag.dropTarget?.itemId === exercise.id ? "rounded ring-1 ring-secondary/60" : ""}`}
+                  data-history-exercise={exercise.id}
+                  key={exercise.key}
+                >
                   <div className="flex items-center gap-2">
                     <Button
                       variant="drag-handle"
@@ -140,129 +146,151 @@ export function CompletedWorkoutEditorDialog({
                     >
                       <span aria-hidden="true">⠿</span>
                     </Button>
-                    <div>
-                      <p className="font-semibold">
-                        <span className="mr-2 font-mono text-xs text-muted-steel">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-                        {exercise.exerciseName}
-                      </p>
-                      <p className="mt-0.5 pl-8 text-xs text-muted-steel">
-                        {exercise.equipment}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3">
-                  {exercise.sets.map((set) => (
-                    <div
-                      className="flex items-center justify-between gap-3 text-sm text-muted-steel"
-                      key={set.setNumber}
+                    <button
+                      aria-controls={detailsId}
+                      aria-expanded={isExpanded}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md px-2 py-2 text-left transition hover:bg-surface/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      onClick={() =>
+                        setOpenExerciseKey((openKey) =>
+                          openKey === exercise.key ? null : exercise.key,
+                        )
+                      }
+                      type="button"
                     >
-                      <span>Set {set.setNumber}</span>
-                      {set.targetReps && (
-                        <span className="min-w-0 flex-1 text-right text-xs">
-                          Target: {set.targetReps}
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">
+                          <span className="mr-2 font-mono text-xs text-muted-steel">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                          {exercise.exerciseName}
                         </span>
-                      )}
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <label className="flex flex-col gap-1 text-[10px]">
-                          <span>Weight</span>
-                          <input
-                            aria-label={`${exercise.exerciseName} set ${set.setNumber} actual weight`}
-                            className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary"
-                            onBlur={() => {
-                              if (set.setNumber !== 1) return;
-                              updateExercise(
-                                exercise.key,
-                                (currentExercise) => ({
-                                  ...currentExercise,
-                                  sets: inheritFirstSetWeight(
-                                    currentExercise.sets,
-                                  ),
-                                }),
-                              );
-                            }}
-                            onChange={(event) =>
-                              updateExercise(
-                                exercise.key,
-                                (currentExercise) => ({
-                                  ...currentExercise,
-                                  sets: applySetWeightChange(
-                                    currentExercise.sets,
-                                    set.setNumber,
-                                    event.target.value === ""
-                                      ? null
-                                      : event.target.value,
-                                  ),
-                                }),
-                              )
-                            }
-                            placeholder={
-                              set.actualWeight ??
-                              exercise.sets[0]?.actualWeight ??
-                              "Weight"
-                            }
-                            type="text"
-                            value={set.actualWeight ?? ""}
-                          />
-                        </label>
-                        <label className="flex flex-col gap-1 text-[10px]">
-                          <span>Reps</span>
-                          <input
-                            aria-label={`${exercise.exerciseName} set ${set.setNumber} actual reps`}
-                            className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary"
-                            inputMode="numeric"
-                            max={1000}
-                            min={0}
-                            onChange={(event) => {
-                              const value = event.target.value;
-                              updateExercise(
-                                exercise.key,
-                                (currentExercise) => ({
-                                  ...currentExercise,
-                                  sets: currentExercise.sets.map(
-                                    (currentSet) =>
-                                      currentSet.setNumber === set.setNumber
-                                        ? {
-                                            ...currentSet,
-                                            actualReps:
-                                              value === ""
-                                                ? null
-                                                : Number(value),
-                                          }
-                                        : currentSet,
-                                  ),
-                                }),
-                              );
-                            }}
-                            placeholder="Reps"
-                            type="number"
-                            value={set.actualReps ?? ""}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                        <span className="mt-0.5 block pl-8 text-xs text-muted-steel">
+                          {exercise.equipment}
+                        </span>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 font-mono text-lg text-secondary"
+                      >
+                        {isExpanded ? "−" : "+"}
+                      </span>
+                    </button>
+                  </div>
 
-                <FormField className="mt-4" label="Exercise note">
-                  <textarea
-                    className="min-h-20 w-full resize-y rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-starlight outline-none focus:border-secondary"
-                    maxLength={2000}
-                    onChange={(event) =>
-                      updateExercise(exercise.key, (currentExercise) => ({
-                        ...currentExercise,
-                        notes: event.target.value,
-                      }))
-                    }
-                    placeholder="Optional note"
-                    value={exercise.notes}
-                  />
-                </FormField>
-              </li>
-            ))}
+                  <div
+                    className="mt-2 rounded-md border border-border/70 bg-surface/40 p-3 sm:p-4"
+                    hidden={!isExpanded}
+                    id={detailsId}
+                  >
+                    <div className="grid gap-3">
+                      {exercise.sets.map((set) => (
+                        <div
+                          className="flex items-center justify-between gap-3 text-sm text-muted-steel"
+                          key={set.setNumber}
+                        >
+                          <span>Set {set.setNumber}</span>
+                          {set.targetReps && (
+                            <span className="min-w-0 flex-1 text-right text-xs">
+                              Target: {set.targetReps}
+                            </span>
+                          )}
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <label className="flex flex-col gap-1 text-[10px]">
+                              <span>Weight (lb)</span>
+                              <WeightInput
+                                aria-label={`${exercise.exerciseName} set ${set.setNumber} actual weight in pounds`}
+                                className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary"
+                                onBlur={() => {
+                                  if (set.setNumber !== 1) return;
+                                  updateExercise(
+                                    exercise.key,
+                                    (currentExercise) => ({
+                                      ...currentExercise,
+                                      sets: inheritFirstSetWeight(
+                                        currentExercise.sets,
+                                      ),
+                                    }),
+                                  );
+                                }}
+                                onValueChange={(value) =>
+                                  updateExercise(
+                                    exercise.key,
+                                    (currentExercise) => ({
+                                      ...currentExercise,
+                                      sets: applySetWeightChange(
+                                        currentExercise.sets,
+                                        set.setNumber,
+                                        value,
+                                      ),
+                                    }),
+                                  )
+                                }
+                                placeholder={
+                                  set.actualWeight?.toString() ??
+                                  exercise.sets[0]?.actualWeight?.toString() ??
+                                  "Weight (lb)"
+                                }
+                                value={set.actualWeight}
+                              />
+                            </label>
+                            <label className="flex flex-col gap-1 text-[10px]">
+                              <span>Reps</span>
+                              <input
+                                aria-label={`${exercise.exerciseName} set ${set.setNumber} actual reps`}
+                                className="w-24 rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary"
+                                inputMode="numeric"
+                                max={1000}
+                                min={0}
+                                onChange={(event) => {
+                                  const value = event.target.value;
+                                  updateExercise(
+                                    exercise.key,
+                                    (currentExercise) => ({
+                                      ...currentExercise,
+                                      sets: currentExercise.sets.map(
+                                        (currentSet) =>
+                                          currentSet.setNumber ===
+                                          set.setNumber
+                                            ? {
+                                                ...currentSet,
+                                                actualReps:
+                                                  value === ""
+                                                    ? null
+                                                    : Number(value),
+                                              }
+                                            : currentSet,
+                                      ),
+                                    }),
+                                  );
+                                }}
+                                placeholder="Reps"
+                                type="number"
+                                value={set.actualReps ?? ""}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <FormField className="mt-4" label="Exercise note">
+                      <textarea
+                        className="min-h-20 w-full resize-y rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-starlight outline-none focus:border-secondary"
+                        maxLength={2000}
+                        onChange={(event) =>
+                          updateExercise(exercise.key, (currentExercise) => ({
+                            ...currentExercise,
+                            notes: event.target.value,
+                          }))
+                        }
+                        placeholder="Optional note"
+                        value={exercise.notes}
+                      />
+                    </FormField>
+                  </div>
+                </li>
+              );
+            })}
           </ol>
 
           {error && (

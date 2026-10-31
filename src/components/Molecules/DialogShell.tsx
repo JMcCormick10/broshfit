@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../Atoms/Button";
 
 type DialogShellProps = {
@@ -30,7 +31,7 @@ export function DialogShell({
     if (!closeDisabled) onClose();
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
       role="presentation"
@@ -71,6 +72,7 @@ export function DialogShell({
         </header>
         {children}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

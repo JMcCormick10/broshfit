@@ -1,11 +1,14 @@
 import type { ButtonHTMLAttributes } from "react";
 
-type ButtonVariant =
+export type ButtonVariant =
   | "primary"
   | "primary-flex"
   | "secondary"
   | "outline"
   | "outline-secondary"
+  | "outline-primary-small"
+  | "outline-secondary-small"
+  | "outline-accent-small"
   | "outline-small"
   | "outline-danger-small"
   | "danger"
@@ -44,6 +47,12 @@ const variantClasses: Record<ButtonVariant, string> = {
     "inline-flex items-center justify-center rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-muted-steel transition hover:text-starlight disabled:opacity-50",
   "outline-secondary":
     "inline-flex items-center justify-center rounded-md border border-secondary/50 px-3 py-2 text-sm font-semibold text-secondary transition hover:border-secondary hover:bg-void disabled:opacity-50",
+  "outline-primary-small":
+    "inline-flex w-full items-center justify-center rounded-md border border-primary/50 px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-primary hover:bg-primary/10 disabled:opacity-50",
+  "outline-secondary-small":
+    "inline-flex w-full items-center justify-center rounded-md border border-secondary/50 px-3 py-1.5 text-xs font-semibold text-secondary transition hover:border-secondary hover:bg-secondary/10 disabled:opacity-50",
+  "outline-accent-small":
+    "inline-flex w-full items-center justify-center rounded-md border border-accent/50 px-3 py-1.5 text-xs font-semibold text-accent transition hover:border-accent hover:bg-accent/10 disabled:opacity-50",
   "outline-small":
     "inline-flex items-center justify-center rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-steel transition hover:border-secondary/60 hover:text-starlight disabled:opacity-50",
   "outline-danger-small":
@@ -85,6 +94,18 @@ function getSelectedClasses(variant: ButtonVariant, selected: boolean) {
     return selected
       ? "border-accent text-starlight"
       : "border-transparent text-muted-steel hover:text-starlight";
+  }
+
+  if (variant === "outline-primary-small") {
+    return selected ? "border-primary bg-primary text-void" : "";
+  }
+
+  if (variant === "outline-secondary-small") {
+    return selected ? "border-secondary bg-secondary text-void" : "";
+  }
+
+  if (variant === "outline-accent-small") {
+    return selected ? "border-accent bg-accent text-void" : "";
   }
 
   if (variant === "profile") {

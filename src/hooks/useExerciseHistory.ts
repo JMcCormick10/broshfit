@@ -12,25 +12,39 @@ export function useExerciseHistory(
 ) {
   const [history, setHistory] = useState<ExerciseHistory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const completedKey = currentCompletedExerciseIds.join(",");
 
   useEffect(() => {
     if (!exerciseId) {
       // oxlint-disable-next-line react/set-state-in-effect -- clear history when no exercise is selected
       setHistory(null);
+      // oxlint-disable-next-line react/set-state-in-effect -- clear error when no exercise is selected
+      setError(null);
+      // oxlint-disable-next-line react/set-state-in-effect -- clear loading state when no exercise is selected
+      setIsLoading(false);
       return;
     }
 
     let isMounted = true;
     // oxlint-disable-next-line react/set-state-in-effect -- show loading state while fetching history
     setIsLoading(true);
+    // oxlint-disable-next-line react/set-state-in-effect -- clear stale error before fetching history
+    setError(null);
 
     getExerciseHistory(exerciseId, sessionId, currentCompletedExerciseIds)
       .then((result) => {
         if (isMounted) setHistory(result);
       })
-      .catch(() => {
-        if (isMounted) setHistory(null);
+      .catch((historyError: unknown) => {
+        if (isMounted) {
+          setHistory(null);
+          setError(
+            historyError instanceof Error
+              ? historyError.message
+              : "Could not load exercise history.",
+          );
+        }
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -42,7 +56,7 @@ export function useExerciseHistory(
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- completedKey summarizes the id list
   }, [exerciseId, sessionId, completedKey]);
 
-  return { history, isLoading };
+  return { history, isLoading, error };
 }
 
 export function formatExerciseHistorySets(sets: ExerciseHistorySet[]): string {
@@ -53,18 +67,19 @@ export function formatExerciseHistorySets(sets: ExerciseHistorySet[]): string {
   const isUniform = completedSets.every(
     (set) =>
       set.actualReps === first.actualReps &&
-      (set.actualWeight ?? "") === (first.actualWeight ?? ""),
+      set.actualWeight === first.actualWeight,
   );
 
   if (isUniform) {
-    const weight = first.actualWeight ? ` at ${first.actualWeight}` : "";
+    const weight =
+      first.actualWeight !== null ? ` at ${first.actualWeight} lb` : "";
     return `${completedSets.length} set${completedSets.length === 1 ? "" : "s"} of ${first.actualReps} reps${weight}`;
   }
 
   return completedSets
     .map(
       (set) =>
-        `${set.actualReps} reps${set.actualWeight ? ` at ${set.actualWeight}` : ""}`,
+        `${set.actualReps} reps${set.actualWeight !== null ? ` at ${set.actualWeight} lb` : ""}`,
     )
     .join(" · ");
 }

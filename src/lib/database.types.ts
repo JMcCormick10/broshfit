@@ -265,21 +265,21 @@ export type Database = {
           set_number: number;
           target_reps: string | null;
           actual_reps: number | null;
-          actual_weight: string | null;
+          actual_weight: number | null;
         };
         Insert: {
           session_exercise_id: string;
           set_number: number;
           target_reps?: string | null;
           actual_reps?: number | null;
-          actual_weight?: string | null;
+          actual_weight?: number | null;
         };
         Update: {
           session_exercise_id?: string;
           set_number?: number;
           target_reps?: string | null;
           actual_reps?: number | null;
-          actual_weight?: string | null;
+          actual_weight?: number | null;
         };
         Relationships: [];
       };

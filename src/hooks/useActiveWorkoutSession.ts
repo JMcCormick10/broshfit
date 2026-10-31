@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ProfileNotification } from "../constants/profile-copy/notifications";
 import type { WorkoutSession, WorkoutSessionExercise } from "../lib/workouts";
 import {
   addWorkoutSessionExercise,
@@ -34,7 +35,7 @@ export function useActiveWorkoutSession(
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<ProfileNotification | null>(null);
   const { confirmation, clearConfirmation, requestConfirmation } =
     useConfirmation();
   const [reorderNotice, setReorderNotice] = useState<ReorderNotice | null>(
@@ -120,7 +121,7 @@ export function useActiveWorkoutSession(
     try {
       await addWorkoutSessionExercise(session.id, exerciseId);
       await refreshSession();
-      setNotice("Exercise added to this workout.");
+      setNotice({ type: "session-exercise", action: "added" });
     } catch (addError: unknown) {
       setError(
         addError instanceof Error
@@ -143,11 +144,11 @@ export function useActiveWorkoutSession(
         exercise.sets,
         exercise.notes,
       );
-      setNotice(
-        exercise.completedAt
-          ? `${exercise.exerciseName} changes saved.`
-          : "Progress saved.",
-      );
+      setNotice({
+        type: "session-exercise",
+        action: exercise.completedAt ? "changes-saved" : "progress-saved",
+        name: exercise.exerciseName,
+      });
     } catch (saveError: unknown) {
       setError(
         saveError instanceof Error
@@ -236,7 +237,11 @@ export function useActiveWorkoutSession(
       const updatedSession = await getWorkoutSession(session.id);
       onSessionChange(updatedSession);
       setSelectedExerciseId(null);
-      setNotice(`${exercise.exerciseName} completed.`);
+      setNotice({
+        type: "session-exercise",
+        action: "completed",
+        name: exercise.exerciseName,
+      });
     } finally {
       setIsSaving(false);
     }

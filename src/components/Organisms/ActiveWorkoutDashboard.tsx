@@ -1,26 +1,22 @@
 import { useState } from "react";
 import { Button } from "../Atoms/Button";
+import { CharacterChat } from "../Molecules/CharacterChat";
 import { Spinner } from "../Atoms/Spinner";
 import { Toast } from "../Atoms/Toast";
-import { FormField } from "../Molecules/FormField";
 import { DialogShell } from "../Molecules/DialogShell";
 import { ConfirmationDialog } from "../Molecules/ConfirmationDialog";
 import type { WorkoutSession } from "../../lib/workouts";
-import {
-  applySetWeightChange,
-  inheritFirstSetWeight,
-} from "../../lib/workouts";
 import { useActiveWorkoutSession } from "../../hooks/useActiveWorkoutSession";
 import { SessionExercisePickerDialog } from "./SessionExercisePickerDialog";
-import {
-  formatExerciseHistorySets,
-  useExerciseHistory,
-} from "../../hooks/useExerciseHistory";
+import { useExerciseHistory } from "../../hooks/useExerciseHistory";
+import { ActiveWorkoutExerciseDialog } from "./ActiveWorkoutExerciseDialog";
 
 type ActiveWorkoutDashboardProps = {
   onDiscard: () => void;
   onFinish: (routineName: string) => void;
   onSessionChange: (session: WorkoutSession) => void;
+  profileName: string;
+  motivationQuote: string;
   session: WorkoutSession;
 };
 
@@ -28,6 +24,8 @@ export function ActiveWorkoutDashboard({
   onDiscard,
   onFinish,
   onSessionChange,
+  profileName,
+  motivationQuote,
   session,
 }: ActiveWorkoutDashboardProps) {
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
@@ -58,12 +56,15 @@ export function ActiveWorkoutDashboard({
     onSessionChange,
   });
 
-  const { history: exerciseHistory, isLoading: isLoadingHistory } =
-    useExerciseHistory(
-      selectedExercise?.exerciseId ?? null,
-      session.id,
-      completedExercises.map((exercise) => exercise.exerciseId),
-    );
+  const {
+    history: exerciseHistory,
+    isLoading: isLoadingHistory,
+    error: exerciseHistoryError,
+  } = useExerciseHistory(
+    selectedExercise?.exerciseId ?? null,
+    session.id,
+    completedExercises.map((exercise) => exercise.exerciseId),
+  );
 
   return (
     <section aria-labelledby="active-workout-heading">
@@ -116,6 +117,9 @@ export function ActiveWorkoutDashboard({
       )}
 
       <div className="mt-6 max-w-3xl">
+        <div className="mb-6">
+          <CharacterChat profileName={profileName} message={motivationQuote} />
+        </div>
         <section aria-labelledby="remaining-exercises-heading">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2
@@ -248,204 +252,20 @@ export function ActiveWorkoutDashboard({
       </div>
 
       {selectedExercise && (
-        <DialogShell
-          closeDisabled={isSaving}
-          closeLabel="Close exercise"
-          eyebrow={selectedExercise.equipment || "Workout exercise"}
+        <ActiveWorkoutExerciseDialog
+          exercise={selectedExercise}
+          exerciseHistory={exerciseHistory}
+          exerciseHistoryError={exerciseHistoryError}
+          isLoadingHistory={isLoadingHistory}
+          isSaving={isSaving}
+          onAddSet={addSet}
           onClose={() => setSelectedExerciseId(null)}
-          title={selectedExercise.exerciseName}
-          titleId="selected-exercise-heading"
-          widthClass="max-w-2xl"
-          className="max-h-[90vh] overflow-y-auto p-5 sm:p-7"
-        >
-          {error && (
-            <p
-              className="mb-4 rounded-md border border-danger/40 bg-danger/5 px-4 py-3 text-sm"
-              role="alert"
-            >
-              {error}
-            </p>
-          )}
-
-          {selectedExercise.completedAt && (
-            <p className="mb-4 rounded-md border border-secondary/40 px-3 py-2 font-mono text-[10px] text-secondary uppercase">
-              Completed #{selectedExercise.completedOrder}
-            </p>
-          )}
-
-          {isLoadingHistory ? (
-            <p className="mb-4 text-xs text-muted-steel">
-              Checking your last session...
-            </p>
-          ) : exerciseHistory ? (
-            <div className="mb-4 rounded-md border border-border bg-surface px-3 py-2.5">
-              <p className="font-mono text-[10px] tracking-[0.12em] text-muted-steel uppercase">
-                Last time //{" "}
-                {new Date(exerciseHistory.completedAt).toLocaleDateString()}
-              </p>
-              <p className="mt-1.5 text-sm text-starlight">
-                {formatExerciseHistorySets(exerciseHistory.sets)}
-              </p>
-              {exerciseHistory.notes && (
-                <p className="mt-1 text-xs text-muted-steel">
-                  &ldquo;{exerciseHistory.notes}&rdquo;
-                </p>
-              )}
-              <details className="mt-2" key={selectedExercise.id}>
-                <summary className="inline-flex cursor-pointer list-none items-center rounded-md border border-secondary/40 px-3 py-1.5 text-xs font-semibold text-secondary transition hover:bg-secondary/10 [&::-webkit-details-marker]:hidden">
-                  Show more context
-                </summary>
-                <div className="mt-2 space-y-1.5 border-t border-border pt-2 text-xs leading-5 text-muted-steel">
-                  {exerciseHistory.contextSentences.map((sentence) => (
-                    <p key={sentence}>{sentence}</p>
-                  ))}
-                </div>
-              </details>
-            </div>
-          ) : null}
-
-          <div>
-            <h3 className="mb-3 font-mono text-[10px] tracking-[0.12em] text-muted-steel uppercase">
-              Actual sets // suggested {selectedExercise.prescribedSetCount}{" "}
-              sets
-            </h3>
-            <ol className="divide-y divide-border border-y border-border">
-              {selectedExercise.sets.map((set) => {
-                const firstWeight =
-                  selectedExercise.sets[0]?.actualWeight ?? "";
-                const defaultWeight = set.actualWeight ?? firstWeight;
-
-                return (
-                  <li
-                    className="grid gap-3 py-3 sm:grid-cols-[5rem_1fr]"
-                    key={set.setNumber}
-                  >
-                    <span className="font-mono text-xs text-muted-steel">
-                      Set {set.setNumber}
-                      {set.targetReps && (
-                        <span className="mt-1 block text-[10px]">
-                          Target: {set.targetReps}
-                        </span>
-                      )}
-                    </span>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <label className="flex flex-col gap-1 text-[10px] text-muted-steel">
-                        <span>Weight</span>
-                        <input
-                          aria-label={`${selectedExercise.exerciseName} set ${set.setNumber} actual weight`}
-                          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary disabled:opacity-60"
-                          disabled={isSaving}
-                          onBlur={() => {
-                            if (set.setNumber !== 1) return;
-                            updateExercise(selectedExercise.id, (exercise) => ({
-                              ...exercise,
-                              sets: inheritFirstSetWeight(exercise.sets),
-                            }));
-                          }}
-                          onChange={(event) =>
-                            updateExercise(selectedExercise.id, (exercise) => ({
-                              ...exercise,
-                              sets: applySetWeightChange(
-                                exercise.sets,
-                                set.setNumber,
-                                event.target.value === ""
-                                  ? null
-                                  : event.target.value,
-                              ),
-                            }))
-                          }
-                          placeholder={defaultWeight || "Weight"}
-                          type="text"
-                          value={set.actualWeight ?? ""}
-                        />
-                      </label>
-                      <label className="flex flex-col gap-1 text-[10px] text-muted-steel">
-                        <span>Reps</span>
-                        <input
-                          aria-label={`${selectedExercise.exerciseName} set ${set.setNumber} actual reps`}
-                          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-right text-sm text-starlight outline-none focus:border-secondary disabled:opacity-60"
-                          disabled={isSaving}
-                          inputMode="numeric"
-                          max={1000}
-                          min={0}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            updateExercise(selectedExercise.id, (exercise) => ({
-                              ...exercise,
-                              sets: exercise.sets.map((currentSet) =>
-                                currentSet.setNumber === set.setNumber
-                                  ? {
-                                      ...currentSet,
-                                      actualReps:
-                                        value === "" ? null : Number(value),
-                                    }
-                                  : currentSet,
-                              ),
-                            }));
-                          }}
-                          placeholder="Reps"
-                          type="number"
-                          value={set.actualReps ?? ""}
-                        />
-                      </label>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-
-          <FormField className="mt-5" label="Exercise note (optional)">
-            <textarea
-              className="min-h-24 w-full resize-y rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-starlight outline-none focus:border-secondary disabled:opacity-60"
-              disabled={isSaving}
-              maxLength={2000}
-              onChange={(event) =>
-                updateExercise(selectedExercise.id, (exercise) => ({
-                  ...exercise,
-                  notes: event.target.value,
-                }))
-              }
-              placeholder="How did it feel?"
-              value={selectedExercise.notes}
-            />
-          </FormField>
-
-          <div className="mt-5 flex flex-wrap justify-end gap-3">
-            <Button
-              variant="outline"
-              disabled={isSaving}
-              onClick={() => void saveProgress(selectedExercise)}
-              type="button"
-            >
-              {isSaving
-                ? "Saving..."
-                : selectedExercise.completedAt
-                  ? "Save Changes"
-                  : "Save Progress"}
-            </Button>
-            {!selectedExercise.completedAt && (
-              <>
-                <Button
-                  variant="secondary"
-                  disabled={isSaving}
-                  onClick={() => void addSet(selectedExercise)}
-                  type="button"
-                >
-                  Add Set
-                </Button>
-                <Button
-                  variant="primary"
-                  disabled={isSaving}
-                  onClick={() => void completeExercise(selectedExercise)}
-                  type="button"
-                >
-                  Complete Exercise
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogShell>
+          onCompleteExercise={completeExercise}
+          onSaveProgress={saveProgress}
+          profileName={profileName}
+          saveError={error}
+          updateExercise={updateExercise}
+        />
       )}
 
       {isExercisePickerOpen && (
@@ -472,7 +292,13 @@ export function ActiveWorkoutDashboard({
         />
       )}
 
-      {notice && <Toast message={notice} onDismiss={() => setNotice(null)} />}
+      {notice && (
+        <Toast
+          notification={notice}
+          onDismiss={() => setNotice(null)}
+          profileName={profileName}
+        />
+      )}
 
       {reorderNotice && (
         <DialogShell

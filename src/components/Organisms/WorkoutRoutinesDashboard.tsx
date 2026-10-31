@@ -8,10 +8,11 @@ import {
   type WorkoutRoutine,
 } from "../../lib/workouts";
 import { useAsyncData } from "../../hooks/useAsyncData";
+import type { ProfileNotification } from "../../constants/profile-copy/notifications";
 
 type WorkoutRoutinesDashboardProps = {
   onAdd: () => void;
-  onChanged: (message: string) => void;
+  onChanged: (notification: ProfileNotification) => void;
   onEdit: (routine: WorkoutRoutine) => void;
   refreshKey: number;
 };
@@ -50,9 +51,11 @@ export function WorkoutRoutinesDashboard({
 
     try {
       await setWorkoutArchived(routine.id, shouldArchive);
-      onChanged(
-        `${shouldArchive ? "Archived" : "Restored"} workout routine: ${routine.name}.`,
-      );
+      onChanged({
+        type: "workout-routine",
+        action: shouldArchive ? "archived" : "restored",
+        name: routine.name,
+      });
     } catch (error: unknown) {
       setActionError(
         error instanceof Error
@@ -71,11 +74,11 @@ export function WorkoutRoutinesDashboard({
 
     try {
       const wasArchived = await deleteWorkout(routineToDelete.id);
-      onChanged(
-        wasArchived
-          ? `${routineToDelete.name} has completed workouts and was archived instead of deleted.`
-          : `Deleted workout routine: ${routineToDelete.name}.`,
-      );
+      onChanged({
+        type: "workout-routine",
+        action: wasArchived ? "archived-instead-of-deleted" : "deleted",
+        name: routineToDelete.name,
+      });
       setRoutineToDelete(null);
     } catch (error: unknown) {
       setActionError(

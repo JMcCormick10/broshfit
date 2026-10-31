@@ -24,6 +24,7 @@ import { Toast } from "../Atoms/Toast";
 import { getProfileAvatarUrl } from "../../lib/profile-avatar";
 import { getProfileTheme } from "../../lib/profile-theme";
 import { getProfileCopy } from "../../constants/profile-copy";
+import type { ProfileNotification } from "../../constants/profile-copy/notifications";
 import { ExerciseProgressPage } from "./ExerciseProgressPage";
 
 type ProfileLandingPageProps = {
@@ -57,7 +58,8 @@ export function ProfileLandingPage({
   );
   const [exerciseListVersion, setExerciseListVersion] = useState(0);
   const [workoutListVersion, setWorkoutListVersion] = useState(0);
-  const [exerciseNotice, setExerciseNotice] = useState<string | null>(null);
+  const [exerciseNotice, setExerciseNotice] =
+    useState<ProfileNotification | null>(null);
   const {
     data: recentWorkouts,
     error: recentWorkoutError,
@@ -135,9 +137,11 @@ export function ProfileLandingPage({
     _exerciseId: string,
     wasEdited: boolean,
   ) {
-    setExerciseNotice(
-      `${wasEdited ? "Updated" : "Added"} ${name} in the shared exercise library.`,
-    );
+    setExerciseNotice({
+      type: "exercise-library",
+      action: wasEdited ? "updated" : "added",
+      name,
+    });
     setExerciseListVersion((version) => version + 1);
   }
 
@@ -157,14 +161,16 @@ export function ProfileLandingPage({
   }
 
   function handleWorkoutSaved(name: string, wasEdited: boolean) {
-    setExerciseNotice(
-      `${wasEdited ? "Updated" : "Created"} workout routine: ${name}.`,
-    );
+    setExerciseNotice({
+      type: "workout-routine",
+      action: wasEdited ? "updated" : "created",
+      name,
+    });
     setWorkoutListVersion((version) => version + 1);
   }
 
-  function handleWorkoutChanged(message: string) {
-    setExerciseNotice(message);
+  function handleWorkoutChanged(notification: ProfileNotification) {
+    setExerciseNotice(notification);
     setWorkoutListVersion((version) => version + 1);
   }
 
@@ -173,7 +179,11 @@ export function ProfileLandingPage({
     setActiveWorkoutSession(session);
     setIsRoutinePickerOpen(false);
     setActiveWorkoutError(null);
-    setExerciseNotice(`Started workout: ${session.routineName}.`);
+    setExerciseNotice({
+      type: "workout",
+      action: "started",
+      name: session.routineName,
+    });
   }
 
   function handleWorkoutSessionChange(session: WorkoutSession) {
@@ -182,7 +192,11 @@ export function ProfileLandingPage({
 
   function handleWorkoutSessionFinished(routineName: string) {
     setActiveWorkoutSession(null);
-    setExerciseNotice(`${routineName} completed and added to workout history.`);
+    setExerciseNotice({
+      type: "workout",
+      action: "completed",
+      name: routineName,
+    });
     refreshRecentWorkouts();
   }
 
@@ -369,10 +383,16 @@ export function ProfileLandingPage({
             <ActiveWorkoutDashboard
               onDiscard={() => {
                 setActiveWorkoutSession(null);
-                setExerciseNotice("Workout discarded.");
+                setExerciseNotice({
+                  type: "workout",
+                  action: "discarded",
+                  name: activeWorkoutSession.routineName,
+                });
               }}
               onFinish={handleWorkoutSessionFinished}
               onSessionChange={handleWorkoutSessionChange}
+              profileName={profile.name}
+              motivationQuote={profileCopy.workoutMotivation(activeWorkoutSession.id)}
               session={activeWorkoutSession}
             />
           ) : (
@@ -512,7 +532,7 @@ export function ProfileLandingPage({
             refreshKey={workoutListVersion}
           />
         ) : activeView === "workout-history" ? (
-          <WorkoutHistoryPage />
+          <WorkoutHistoryPage profileName={profile.name} />
         ) : (
           <ExerciseProgressPage profileCopy={profileCopy} profileName={profile.name} />
         )}
@@ -542,19 +562,20 @@ export function ProfileLandingPage({
           onClose={() => setCompletedWorkoutToEdit(null)}
           onSaved={async (action) => {
             await refreshRecentWorkouts();
-            setExerciseNotice(
-              action === "deleted"
-                ? `${completedWorkoutToEdit.routineName} deleted from workout history.`
-                : `${completedWorkoutToEdit.routineName} changes saved.`,
-            );
+            setExerciseNotice({
+              type: "workout-history",
+              action: action === "deleted" ? "deleted" : "updated",
+              name: completedWorkoutToEdit.routineName,
+            });
           }}
           workout={completedWorkoutToEdit}
         />
       )}
       {exerciseNotice && (
         <Toast
-          message={exerciseNotice}
+          notification={exerciseNotice}
           onDismiss={() => setExerciseNotice(null)}
+          profileName={profile.name}
         />
       )}
     </main>

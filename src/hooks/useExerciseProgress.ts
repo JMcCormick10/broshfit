@@ -11,13 +11,17 @@ const RANGE_MONTHS: Record<Exclude<ProgressRange, "all">, number> = {
   year: 12,
 };
 
-export function useExerciseProgress() {
+export function useExerciseProgress(exerciseId?: string) {
   const [range, setRange] = useState<ProgressRange>("3months");
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-  const { data, error, isLoading } = useAsyncData(getExerciseProgress, [], {
-    errorMessage: "Could not load exercise progress.",
-    initialData: [] as ExerciseProgressEntry[],
-  });
+  const { data, error, isLoading } = useAsyncData(
+    () => getExerciseProgress(exerciseId),
+    [exerciseId],
+    {
+      errorMessage: "Could not load exercise progress.",
+      initialData: [] as ExerciseProgressEntry[],
+    },
+  );
 
   const exercises = useMemo(() => {
     const grouped = new Map<string, ExerciseProgressEntry[]>();

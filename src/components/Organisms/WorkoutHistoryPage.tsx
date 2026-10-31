@@ -8,11 +8,12 @@ import {
   type CompletedWorkoutSummary,
 } from "../../lib/workouts";
 import { useAsyncData } from "../../hooks/useAsyncData";
+import type { ProfileNotification } from "../../constants/profile-copy/notifications";
 
-export function WorkoutHistoryPage() {
+export function WorkoutHistoryPage({ profileName }: { profileName: string }) {
   const [selectedWorkout, setSelectedWorkout] =
     useState<CompletedWorkoutSummary | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<ProfileNotification | null>(null);
   const {
     data: workouts,
     error: loadError,
@@ -82,16 +83,22 @@ export function WorkoutHistoryPage() {
           onClose={() => setSelectedWorkout(null)}
           onSaved={async (action) => {
             await refreshHistory();
-            setNotice(
-              action === "deleted"
-                ? `${selectedWorkout.routineName} deleted from workout history.`
-                : `${selectedWorkout.routineName} changes saved.`,
-            );
+            setNotice({
+              type: "workout-history",
+              action: action === "deleted" ? "deleted" : "updated",
+              name: selectedWorkout.routineName,
+            });
           }}
           workout={selectedWorkout}
         />
       )}
-      {notice && <Toast message={notice} onDismiss={() => setNotice(null)} />}
+      {notice && (
+        <Toast
+          notification={notice}
+          onDismiss={() => setNotice(null)}
+          profileName={profileName}
+        />
+      )}
     </section>
   );
 }
