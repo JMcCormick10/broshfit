@@ -27,6 +27,6 @@ The `.env*` files are ignored by Git except `.env.example`; do not commit local 
 
 ## PWA
 
-Production builds generate a manifest and service worker. The PWA uses icons derived from `public/new-logo.png`; install it from the browser's install option (or **Add to Home Screen** on iOS). The service worker caches the app shell and build assets; Supabase data operations still require a network connection.
+Production builds generate a manifest and service worker. The PWA uses icons derived from `public/new-logo.png`; install it from the browser's install option (or **Add to Home Screen** on iOS). When a new version is detected, Broshfit shows an update prompt; choose **Update now** to reload the app. Keep the installed PWA—there is no need to uninstall and add it again. The service worker caches the app shell and build assets; Supabase data operations still require a network connection.
 
 Run `npm run build` and `npm run preview` to test the production PWA locally. Service workers require HTTPS except on localhost.
