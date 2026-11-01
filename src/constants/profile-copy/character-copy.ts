@@ -41,7 +41,7 @@ export const characterProfileText: Record<
     loginDescription:
       "Another day, another chance to get stronger. Sign in and get moving.",
     dashboardEyebrow: "Train hard // get stronger",
-    dashboardGreeting: "Ready for another round, Goku?",
+    dashboardGreeting: "Ready for another round, Josh?",
     dashboardPrompt: "Every session is a chance to go beyond yesterday.",
     startWorkoutLabel: "Start Training",
   },
@@ -51,7 +51,7 @@ export const characterProfileText: Record<
     loginDescription:
       "The throne won't claim itself. Sign in and take another step toward the top.",
     dashboardEyebrow: "No excuses // no equals",
-    dashboardGreeting: "The top spot won't claim itself, Vegeta.",
+    dashboardGreeting: "The top spot won't claim itself, Brad.",
     dashboardPrompt: "Set a new standard. Then raise it again.",
     startWorkoutLabel: "Chase the Crown",
   },
@@ -198,7 +198,7 @@ export const progressMessages = {
       "Your training is showing promise! Let's keep the good stuff and work on the part that's lagging behind!",
       "Looks like one of your stats went Super Saiyan while the other is still charging up!",
       "A mixed result doesn't mean you've lost the fight! There's still plenty of power left to unlock!",
-      "One area is improving, and another needs a little help. We can train both — just like Goku and Vegeta!",
+      "One area is improving, and another needs a little help. We can train both — just like me and Vegeta!",
       "You've got a reason to celebrate and a reason to keep training! That's a pretty good combination!",
       "Even in the Hyperbolic Time Chamber, progress takes patience. Keep at it!",
       "The battle isn't over yet! Hold on to your gains and prepare for the next round!",
@@ -661,7 +661,7 @@ export const coachOpenings: Record<ProgressCharacter, readonly string[]> = {
     "Let's see if you can beat your last best on this exercise!",
     "You've got more strength in you! Choose a target and give it a shot!",
     "One more rep, a little more weight, or perfect your form! What's the plan?",
-    "Remember, even Goku started with lighter weights! Keep building!",
+    "Remember, even I started with lighter weights! Keep building!",
     "This exercise is your next challenge! Let's see what you can unlock!",
     "Your muscles are getting stronger! What's the next milestone?",
     "Don't underestimate the power of one more rep! Choose your next target!",
@@ -728,23 +728,21 @@ type NotificationVoice = {
   closing: string;
 };
 
-export const notificationVoices: Record<
-  ProgressCharacter,
-  NotificationVoice
-> = {
-  goku: {
-    opening: "Nice!",
-    closing: "Keep that momentum going.",
-  },
-  vegeta: {
-    opening: "Good.",
-    closing: "Stay focused and keep raising your standard.",
-  },
-  ginyu: {
-    opening: "Mission update:",
-    closing: "The squad is ready for the next objective.",
-  },
-};
+export const notificationVoices: Record<ProgressCharacter, NotificationVoice> =
+  {
+    goku: {
+      opening: "Nice!",
+      closing: "Keep that momentum going.",
+    },
+    vegeta: {
+      opening: "Good.",
+      closing: "Stay focused and keep raising your standard.",
+    },
+    ginyu: {
+      opening: "Mission update:",
+      closing: "The squad is ready for the next objective.",
+    },
+  };
 
 export const exerciseHistoryVoices: Record<
   ProgressCharacter,

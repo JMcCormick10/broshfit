@@ -106,6 +106,24 @@ function getRepProgressionTarget(
   );
 }
 
+function completedAllSetsAtRepRangeLimit(
+  sets: CompletedCoachSet[],
+  targetReps: (string | null)[],
+): boolean {
+  return (
+    targetReps.length > 0 &&
+    targetReps.every((_, index) => {
+      const setNumber = index + 1;
+      const maxReps = getRepRangeForSet(targetReps, setNumber)?.max;
+      if (maxReps === null || maxReps === undefined) return false;
+
+      return sets.some(
+        (set) => set.setNumber === setNumber && set.actualReps >= maxReps,
+      );
+    })
+  );
+}
+
 function formatRepRange(range: RepRange): string {
   if (range.max === null) return `${range.min}+`;
   if (range.min === range.max) return `${range.min}`;
@@ -276,32 +294,38 @@ export function getCoachSuggestions(
           weight: heaviestSet.weight + HEAVIEST_LOAD_INCREMENT_LB,
           reps: heaviestLoadRange?.min ?? heaviestSet.actualReps,
         };
+  const allSetsAtRepRangeLimit = completedAllSetsAtRepRangeLimit(
+    completedSets,
+    targetReps,
+  );
+  const heaviestLoadSuggestion = {
+    label: allSetsAtRepRangeLimit ? "Increase weight" : "Heaviest load",
+    description:
+      heaviestSet === null || heaviestLoadTarget === null
+        ? "Log a weighted set to establish a numeric baseline."
+        : `${allSetsAtRepRangeLimit ? "You completed every prescribed set at the top of its rep range. " : ""}Your heaviest set last time was ${formatNumber(heaviestSet.weight)} lb for ${heaviestSet.actualReps} reps. Try increasing it to ${formatNumber(heaviestLoadTarget.weight)} lb for at least ${heaviestLoadTarget.reps} reps${heaviestLoadRange ? ` (within the ${formatRepRange(heaviestLoadRange)} rep range)` : ""}.`,
+  };
 
   return {
     opening,
     suggestions: [
+      ...(allSetsAtRepRangeLimit ? [heaviestLoadSuggestion] : []),
       {
         label: "Estimated 1RM",
         description:
           bestEstimatedSet === null || estimatedOneRepMaxTarget === null
             ? "Log a weighted set with reps to establish a numeric baseline."
-            : `Last best: ${formatNumber(bestEstimatedSet.weight)} lb × ${bestEstimatedSet.actualReps} reps. Target: ${formatNumber(estimatedOneRepMaxTarget.weight)} lb × ${estimatedOneRepMaxTarget.reps} reps${estimatedOneRepMaxRange ? ` (within the ${formatRepRange(estimatedOneRepMaxRange)} rep range)` : ""}.`,
+            : `To set a new estimated 1RM, aim for ${formatNumber(estimatedOneRepMaxTarget.weight)} lb × ${estimatedOneRepMaxTarget.reps} reps${estimatedOneRepMaxRange ? ` (within the ${formatRepRange(estimatedOneRepMaxRange)} rep range)` : ""}.`,
       },
       ...(repProgressionTarget
         ? [
             {
               label: "Add reps",
-              description: `Last: Set ${repProgressionTarget.set.setNumber}, ${formatNumber(repProgressionTarget.set.weight)} lb × ${repProgressionTarget.set.actualReps} reps. Target: ${repProgressionTarget.reps} reps at the same load (within the ${formatRepRange(repProgressionTarget.range)} rep range).`,
+              description: `Aim to increase Set ${repProgressionTarget.set.setNumber} from ${repProgressionTarget.set.actualReps} to ${repProgressionTarget.reps} reps at ${formatNumber(repProgressionTarget.set.weight)} lb (within the ${formatRepRange(repProgressionTarget.range)} rep range).`,
             },
           ]
         : []),
-      {
-        label: "Heaviest load",
-        description:
-          heaviestSet === null || heaviestLoadTarget === null
-            ? "Log a weighted set to establish a numeric baseline."
-            : `Last top set: ${formatNumber(heaviestSet.weight)} lb × ${heaviestSet.actualReps} reps. Target: ${formatNumber(heaviestLoadTarget.weight)} lb for at least ${heaviestLoadTarget.reps} reps${heaviestLoadRange ? ` (within the ${formatRepRange(heaviestLoadRange)} rep range)` : ""}.`,
-      },
+      ...(!allSetsAtRepRangeLimit ? [heaviestLoadSuggestion] : []),
     ],
   };
 }
