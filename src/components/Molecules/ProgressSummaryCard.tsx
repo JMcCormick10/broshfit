@@ -5,10 +5,13 @@ type ProgressSummary = {
   name: string;
   equipment: string;
   sessions: number;
+  usesRepMetrics: boolean;
   strengthPercentChange: number | null;
-  volumeLoadPercentChange: number | null;
   heaviestLoadPercentChange: number | null;
   totalRepsChange: number | null;
+  totalRepsPercentChange: number | null;
+  bestSetRepsChange: number | null;
+  bestSetRepsPercentChange: number | null;
 };
 
 function formatPercent(change: number | null) {
@@ -23,6 +26,11 @@ function getChangeClass(change: number | null) {
     : trend === "down"
       ? "text-danger"
       : "text-muted-steel";
+}
+
+function formatRepChange(change: number | null) {
+  if (change === null) return "—";
+  return `${change > 0 ? "+" : ""}${change} reps`;
 }
 
 export function ProgressSummaryCard({
@@ -49,29 +57,25 @@ export function ProgressSummaryCard({
             {item.name}
           </p>
           <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-            <p className={getChangeClass(item.strengthPercentChange)}>
-              e1RM {formatPercent(item.strengthPercentChange)}
-            </p>
-            <p className={getChangeClass(item.volumeLoadPercentChange)}>
-              Volume {formatPercent(item.volumeLoadPercentChange)}
-            </p>
-            <p className={getChangeClass(item.heaviestLoadPercentChange)}>
-              Load {formatPercent(item.heaviestLoadPercentChange)}
-            </p>
-            <p
-              className={
-                item.totalRepsChange === null || item.totalRepsChange === 0
-                  ? "text-muted-steel"
-                  : item.totalRepsChange > 0
-                    ? "text-success"
-                    : "text-danger"
-              }
-            >
-              Reps{" "}
-              {item.totalRepsChange === null
-                ? "—"
-                : `${item.totalRepsChange > 0 ? "+" : ""}${item.totalRepsChange}`}
-            </p>
+            {item.usesRepMetrics ? (
+              <>
+                <p className={getChangeClass(item.totalRepsPercentChange)}>
+                  Total {formatRepChange(item.totalRepsChange)}
+                </p>
+                <p className={getChangeClass(item.bestSetRepsPercentChange)}>
+                  Best set {formatRepChange(item.bestSetRepsChange)}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className={getChangeClass(item.strengthPercentChange)}>
+                  e1RM {formatPercent(item.strengthPercentChange)}
+                </p>
+                <p className={getChangeClass(item.heaviestLoadPercentChange)}>
+                  Load {formatPercent(item.heaviestLoadPercentChange)}
+                </p>
+              </>
+            )}
           </div>
           <p className="mt-1 text-xs text-muted-steel">
             {item.sessions} logged sessions · {item.equipment || "Bodyweight"}

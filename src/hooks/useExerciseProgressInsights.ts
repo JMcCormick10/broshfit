@@ -37,9 +37,9 @@ export function getBestEstimatedOneRepMax(
 export type ExerciseSessionMetrics = {
   entry: ExerciseProgressEntry;
   bestEstimatedOneRepMax: number | null;
+  bestSetReps: number | null;
   heaviestLoad: number | null;
   totalReps: number | null;
-  volumeLoad: number | null;
 };
 
 function getUsableWeight(weight: number | null): number | null {
@@ -48,29 +48,33 @@ function getUsableWeight(weight: number | null): number | null {
     : null;
 }
 
+function hasLoggedLoad(entries: ExerciseProgressEntry[]): boolean {
+  return entries.some((entry) =>
+    entry.sets.some((set) => getUsableWeight(set.actualWeight) !== null),
+  );
+}
+
+export function getBestSetReps(entry: ExerciseProgressEntry): number | null {
+  return entry.sets.reduce<number | null>((best, set) => {
+    if (set.actualReps === null || set.actualReps < 0) return best;
+    return best === null || set.actualReps > best ? set.actualReps : best;
+  }, null);
+}
+
 export function getExerciseSessionMetrics(
   entry: ExerciseProgressEntry,
 ): ExerciseSessionMetrics {
   const loggedSets = entry.sets.filter(
     (set) => set.actualReps !== null && set.actualReps >= 0,
   );
-  const weightedSets = loggedSets.map((set) => ({
-    reps: set.actualReps!,
-    weight: getUsableWeight(set.actualWeight),
-  }));
-  const hasCompleteLoadData =
-    loggedSets.length > 0 &&
-    weightedSets.every((set) => set.weight !== null);
-  // Volume load is the sum of (load * reps) for logged sets. If even one
-  // included set has no valid load, mark volume unavailable instead of
-  // presenting a partial total that could make sessions look comparable.
-  const validLoads = weightedSets
-    .map((set) => set.weight)
+  const validLoads = loggedSets
+    .map((set) => getUsableWeight(set.actualWeight))
     .filter((weight): weight is number => weight !== null);
 
   return {
     entry,
     bestEstimatedOneRepMax: getBestEstimatedOneRepMax([entry]),
+    bestSetReps: getBestSetReps(entry),
     heaviestLoad:
       validLoads.length > 0 ? Math.max(...validLoads) : null,
     totalReps:
@@ -78,9 +82,6 @@ export function getExerciseSessionMetrics(
         // Sum completed-set reps independently of whether loads were logged.
         ? loggedSets.reduce((total, set) => total + set.actualReps!, 0)
         : null,
-    volumeLoad: hasCompleteLoadData
-      ? weightedSets.reduce((total, set) => total + set.weight! * set.reps, 0)
-      : null,
   };
 }
 
@@ -130,15 +131,23 @@ export function getPercentChangeTrend(
 
 function getCombinedTrend(
   strengthChange: number | null,
-  volumeChange: number | null,
   loadChange: number | null,
-  repChange: number | null,
+  totalRepsChange: number | null,
+  bestSetRepsChange: number | null,
+  usesRepMetrics: boolean,
 ): ProgressTrend {
-  const availableTrends = [strengthChange, volumeChange, loadChange]
+  return getTrendFromChanges(
+    usesRepMetrics
+      ? [totalRepsChange, bestSetRepsChange]
+      : [strengthChange, loadChange],
+  );
+}
+
+function getTrendFromChanges(changes: (number | null)[]): ProgressTrend {
+  const availableTrends = changes
     .map(getPercentChangeTrend)
     .filter((trend) => trend !== "unknown");
-  // Use reps as a fallback only when no weight-based comparison is available.
-  if (availableTrends.length === 0) return getPercentChangeTrend(repChange);
+  if (availableTrends.length === 0) return "unknown";
 
   const isUp = availableTrends.includes("up");
   const isDown = availableTrends.includes("down");
@@ -161,12 +170,18 @@ function getAverageChange(values: (number | null)[]) {
 
 function getProgressScore(
   strengthChange: number | null,
-  volumeChange: number | null,
   loadChange: number | null,
+  totalRepsChange: number | null,
+  bestSetRepsChange: number | null,
+  usesRepMetrics: boolean,
 ) {
   // This average ranks exercises already classified as up/down; it does not
   // determine the trend, which is based on each measure's direction.
-  return getAverageChange([strengthChange, volumeChange, loadChange]);
+  return getAverageChange(
+    usesRepMetrics
+      ? [totalRepsChange, bestSetRepsChange]
+      : [strengthChange, loadChange],
+  );
 }
 
 function getStableVariant(value: string, seed: number, count: number): number {
@@ -192,10 +207,6 @@ export function useExerciseProgressInsights({
         metrics,
         (metric) => metric.bestEstimatedOneRepMax,
       );
-      const volumeEndpoints = getMetricEndpoints(
-        metrics,
-        (metric) => metric.volumeLoad,
-      );
       const loadEndpoints = getMetricEndpoints(
         metrics,
         (metric) => metric.heaviestLoad,
@@ -204,13 +215,14 @@ export function useExerciseProgressInsights({
         metrics,
         (metric) => metric.totalReps,
       );
+      const bestSetEndpoints = getMetricEndpoints(
+        metrics,
+        (metric) => metric.bestSetReps,
+      );
+      const usesRepMetrics = !hasLoggedLoad(exercise.entries);
       const strengthPercentChange = getPercentChange(
         strengthEndpoints?.first ?? null,
         strengthEndpoints?.latest ?? null,
-      );
-      const volumeLoadPercentChange = getPercentChange(
-        volumeEndpoints?.first ?? null,
-        volumeEndpoints?.latest ?? null,
       );
       const heaviestLoadPercentChange = getPercentChange(
         loadEndpoints?.first ?? null,
@@ -224,30 +236,46 @@ export function useExerciseProgressInsights({
         repEndpoints?.first ?? null,
         repEndpoints?.latest ?? null,
       );
+      const bestSetRepsChange =
+        bestSetEndpoints === null
+          ? null
+          : bestSetEndpoints.latest - bestSetEndpoints.first;
+      const bestSetRepsPercentChange = getPercentChange(
+        bestSetEndpoints?.first ?? null,
+        bestSetEndpoints?.latest ?? null,
+      );
+      const repPerformancePercentChange = getAverageChange([
+        totalRepsPercentChange,
+        bestSetRepsPercentChange,
+      ]);
       const trend = getCombinedTrend(
         strengthPercentChange,
-        volumeLoadPercentChange,
         heaviestLoadPercentChange,
         totalRepsPercentChange,
+        bestSetRepsPercentChange,
+        usesRepMetrics,
       );
       return {
         id: exercise.id,
         name: exercise.name,
         equipment: exercise.equipment,
         sessions: rangeEntries.length,
+        usesRepMetrics,
         strengthPercentChange,
-        volumeLoadPercentChange,
         heaviestLoadPercentChange,
         totalRepsChange,
         totalRepsPercentChange,
+        bestSetRepsChange,
+        bestSetRepsPercentChange,
+        repPerformancePercentChange,
         trend,
-        progressScore:
-          getProgressScore(
-            strengthPercentChange,
-            volumeLoadPercentChange,
-            heaviestLoadPercentChange,
-          ) ??
+        progressScore: getProgressScore(
+          strengthPercentChange,
+          heaviestLoadPercentChange,
           totalRepsPercentChange,
+          bestSetRepsPercentChange,
+          usesRepMetrics,
+        ),
       };
     });
     const comparable = overviewStats.filter(
@@ -262,27 +290,18 @@ export function useExerciseProgressInsights({
         .length,
       total: overviewStats.length,
     };
-    const overallTrend = getCombinedTrend(
+    const weightedStats = overviewStats.filter((item) => !item.usesRepMetrics);
+    const repStats = overviewStats.filter((item) => item.usesRepMetrics);
+    const overallTrend = getTrendFromChanges([
       getAverageChange(
-        overviewStats.map((item) => item.strengthPercentChange),
+        weightedStats.map((item) => item.strengthPercentChange),
       ),
       getAverageChange(
-        overviewStats.map((item) => item.volumeLoadPercentChange),
+        weightedStats.map((item) => item.heaviestLoadPercentChange),
       ),
-      getAverageChange(
-        overviewStats.map((item) => item.heaviestLoadPercentChange),
-      ),
-      getAverageChange(
-        overviewStats
-          .filter(
-            (item) =>
-              item.strengthPercentChange === null &&
-              item.volumeLoadPercentChange === null &&
-              item.heaviestLoadPercentChange === null,
-          )
-          .map((item) => item.totalRepsPercentChange),
-      ),
-    );
+      getAverageChange(repStats.map((item) => item.totalRepsPercentChange)),
+      getAverageChange(repStats.map((item) => item.bestSetRepsPercentChange)),
+    ]);
     const selected = exercises.find((exercise) => exercise.id === selectedExerciseId) ?? null;
     const selectedEntries = selected ? getEntriesInRange(selected.entries) : [];
     const selectedMetrics = getOrderedSessionMetrics(selectedEntries);
@@ -290,30 +309,45 @@ export function useExerciseProgressInsights({
       selectedMetrics,
       (metric) => metric.bestEstimatedOneRepMax,
     );
-    const volumeEndpoints = getMetricEndpoints(
-      selectedMetrics,
-      (metric) => metric.volumeLoad,
-    );
     const repEndpoints = getMetricEndpoints(
       selectedMetrics,
       (metric) => metric.totalReps,
+    );
+    const bestSetEndpoints = getMetricEndpoints(
+      selectedMetrics,
+      (metric) => metric.bestSetReps,
     );
     const loadEndpoints = getMetricEndpoints(
       selectedMetrics,
       (metric) => metric.heaviestLoad,
     );
+    const usesRepMetrics = selected
+      ? !hasLoggedLoad(selected.entries)
+      : false;
+    const totalRepsChange =
+      repEndpoints === null
+        ? null
+        : repEndpoints.latest - repEndpoints.first;
     const totalRepsPercentChange = getPercentChange(
       repEndpoints?.first ?? null,
       repEndpoints?.latest ?? null,
+    );
+    const bestSetRepsChange =
+      bestSetEndpoints === null
+        ? null
+        : bestSetEndpoints.latest - bestSetEndpoints.first;
+    const bestSetRepsPercentChange = getPercentChange(
+      bestSetEndpoints?.first ?? null,
+      bestSetEndpoints?.latest ?? null,
     );
     const percentChange = getPercentChange(
       strengthEndpoints?.first ?? null,
       strengthEndpoints?.latest ?? null,
     );
-    const volumeLoadPercentChange = getPercentChange(
-      volumeEndpoints?.first ?? null,
-      volumeEndpoints?.latest ?? null,
-    );
+    const repPerformancePercentChange = getAverageChange([
+      totalRepsPercentChange,
+      bestSetRepsPercentChange,
+    ]);
     const heaviestLoadPercentChange = getPercentChange(
       loadEndpoints?.first ?? null,
       loadEndpoints?.latest ?? null,
@@ -347,18 +381,28 @@ export function useExerciseProgressInsights({
       overviewVariant: getStableVariant(range, 13, 50),
       selected,
       selectedEntries,
+      usesRepMetrics,
       rangeBest: getBestEstimatedOneRepMax(selectedEntries),
-      volumeLoadPercentChange,
+      totalRepsChange,
+      totalRepsPercentChange,
+      bestSetRepsChange,
+      bestSetRepsPercentChange,
+      repPerformancePercentChange,
       heaviestLoadChange,
       heaviestLoadPercentChange,
-      strengthTrend: getPercentChangeTrend(percentChange),
+      progressMetricLabel: usesRepMetrics
+        ? "Rep performance"
+        : "Estimated 1RM",
+      percentChange: usesRepMetrics
+        ? repPerformancePercentChange
+        : percentChange,
       trend: getCombinedTrend(
         percentChange,
-        volumeLoadPercentChange,
         heaviestLoadPercentChange,
         totalRepsPercentChange,
+        bestSetRepsPercentChange,
+        usesRepMetrics,
       ),
-      percentChange,
       detailVariant: selected ? getStableVariant(`${selected.id}:${range}`, 7, 50) : 0,
     };
   }, [exercises, getEntriesInRange, range, selectedExerciseId]);

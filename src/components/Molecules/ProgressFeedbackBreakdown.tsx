@@ -56,10 +56,10 @@ export function ProgressFeedbackBreakdown({
             , {mixed} had mixed signals, and {insufficient}{" "}
             {insufficient === 1 ? "needs" : "need"} more comparable sessions.
             Increases of 0.1% or more count as positive; declines up to 2% count
-            as steady. Progress uses the best-set strength estimate, total
-            weight × reps, and heaviest load. Mixed means these measures point
-            in different directions. Exercises without usable weight data are
-            compared by reps.
+            as steady. Exercises with added load use best-set estimated 1RM and
+            heaviest load; exercises without added load use total reps and best
+            reps in a single set. Mixed means the measures point in different
+            directions.
           </p>
         </div>
       )}

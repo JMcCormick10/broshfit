@@ -1,15 +1,25 @@
 import type { ExerciseProgressEntry } from "../../lib/workouts";
-import { estimateOneRepMax } from "../../hooks/useExerciseProgressInsights";
+import {
+  estimateOneRepMax,
+  getBestSetReps,
+} from "../../hooks/useExerciseProgressInsights";
 
-type Props = { entries: ExerciseProgressEntry[] };
+type Props = {
+  entries: ExerciseProgressEntry[];
+  useRepMetrics: boolean;
+};
 
-export function ProgressTrendChart({ entries }: Props) {
+export function ProgressTrendChart({ entries, useRepMetrics }: Props) {
   const points = [...entries]
     .reverse()
     .map((entry) => {
-      const estimates = entry.sets
-        .map((set) => estimateOneRepMax(set.actualWeight, set.actualReps))
-        .filter((value): value is number => value !== null);
+      const estimates = useRepMetrics
+        ? [getBestSetReps(entry)].filter(
+            (value): value is number => value !== null,
+          )
+        : entry.sets
+            .map((set) => estimateOneRepMax(set.actualWeight, set.actualReps))
+            .filter((value): value is number => value !== null);
       return {
         date: entry.completedAt,
         max: estimates.length ? Math.max(...estimates) : null,
@@ -22,11 +32,15 @@ export function ProgressTrendChart({ entries }: Props) {
   if (points.length === 0) {
     return (
       <p className="rounded-lg border border-border p-5 text-sm text-muted-steel">
-        Log reps and weight to see an estimated one rep max trend.
+        {useRepMetrics
+          ? "Log reps in completed sets to see a best-set reps trend."
+          : "Log reps and weight to see an estimated one rep max trend."}
       </p>
     );
   }
 
+  const metricLabel = useRepMetrics ? "Best set reps" : "Estimated 1RM (lb)";
+  const unitLabel = useRepMetrics ? "reps" : "lb estimated";
   const width = 720;
   const height = 240;
   const pad = { top: 20, right: 22, bottom: 38, left: 48 };
@@ -50,13 +64,15 @@ export function ProgressTrendChart({ entries }: Props) {
     <div className="rounded-lg border border-border bg-void/50 p-4">
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h3 className="font-heading text-xl font-bold text-starlight">
-          Estimated 1RM (lb)
+          {metricLabel}
         </h3>
-        <span className="text-xs text-muted-steel">Epley formula</span>
+        {!useRepMetrics && (
+          <span className="text-xs text-muted-steel">Epley formula</span>
+        )}
       </div>
       <svg
         role="img"
-        aria-label="Estimated one rep max over completed workouts"
+        aria-label={`${metricLabel} over completed workouts`}
         viewBox={`0 0 ${width} ${height}`}
         className="w-full overflow-visible"
       >
@@ -105,7 +121,7 @@ export function ProgressTrendChart({ entries }: Props) {
           >
             <title>
               {new Date(point.date).toLocaleDateString()}:{" "}
-              {Math.round(point.max)} lb estimated
+              {Math.round(point.max)} {unitLabel}
             </title>
           </circle>
         ))}

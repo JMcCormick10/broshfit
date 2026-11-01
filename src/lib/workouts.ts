@@ -95,7 +95,7 @@ export async function getExerciseProgress(
   const client = getSupabaseClient();
   const entriesQuery = client
     .from("workout_session_exercises")
-    .select("id, exercise_id, completed_at")
+    .select("id, session_id, exercise_id, completed_at")
     .not("completed_at", "is", null);
   const exercisesQuery = client
     .from("exercises")
@@ -112,13 +112,43 @@ export async function getExerciseProgress(
   if (entriesResult.data.length === 0) return [];
 
   const entryIds = entriesResult.data.map((entry) => entry.id);
-  const setsResult = await client.from("workout_session_sets")
-    .select("session_exercise_id, set_number, actual_reps, actual_weight")
-    .in("session_exercise_id", entryIds)
-    .order("set_number", { ascending: true });
+  const sessionIds = [...new Set(entriesResult.data.map((entry) => entry.session_id))];
+  const [setsResult, sessionResult, completionResult] = await Promise.all([
+    client
+      .from("workout_session_sets")
+      .select("session_exercise_id, set_number, actual_reps, actual_weight")
+      .in("session_exercise_id", entryIds)
+      .order("set_number", { ascending: true }),
+    client
+      .from("workout_sessions")
+      .select("id, completed_at")
+      .in("id", sessionIds),
+    client
+      .from("completed_workouts")
+      .select("session_id, completed_at")
+      .in("session_id", sessionIds)
+      .order("completed_at", { ascending: false }),
+  ]);
   if (setsResult.error) throw setsResult.error;
+  if (sessionResult.error) throw sessionResult.error;
+  if (completionResult.error) throw completionResult.error;
 
   const exerciseById = new Map(exercisesResult.data.map((exercise) => [exercise.id, exercise]));
+  const sessionCompletedAtById = new Map(
+    sessionResult.data.map((session) => [session.id, session.completed_at]),
+  );
+  const workoutCompletedAtBySessionId = new Map<string, string>();
+  for (const completion of completionResult.data) {
+    if (
+      completion.session_id &&
+      !workoutCompletedAtBySessionId.has(completion.session_id)
+    ) {
+      workoutCompletedAtBySessionId.set(
+        completion.session_id,
+        completion.completed_at,
+      );
+    }
+  }
   const setsByEntry = new Map<string, ProgressExerciseSet[]>();
   for (const set of setsResult.data) {
     const sets = setsByEntry.get(set.session_exercise_id) ?? [];
@@ -133,10 +163,17 @@ export async function getExerciseProgress(
       exerciseId: entry.exercise_id,
       exerciseName: exercise?.name ?? "Exercise unavailable",
       equipment: exercise?.equipment ?? "",
-      completedAt: entry.completed_at!,
+      completedAt:
+        workoutCompletedAtBySessionId.get(entry.session_id) ??
+        sessionCompletedAtById.get(entry.session_id) ??
+        entry.completed_at!,
       sets: setsByEntry.get(entry.id) ?? [],
     };
-  });
+  }).sort(
+    (first, second) =>
+      new Date(second.completedAt).getTime() -
+      new Date(first.completedAt).getTime(),
+  );
 }
 
 export function applySetWeightChange(

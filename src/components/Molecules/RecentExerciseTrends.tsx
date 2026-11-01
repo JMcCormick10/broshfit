@@ -1,9 +1,6 @@
 import { getProfileCopy } from "../../constants/profile-copy";
 import { useExerciseProgress } from "../../hooks/useExerciseProgress";
-import {
-  getBestEstimatedOneRepMax,
-  useExerciseProgressInsights,
-} from "../../hooks/useExerciseProgressInsights";
+import { useExerciseProgressInsights } from "../../hooks/useExerciseProgressInsights";
 import type { ProgressRange } from "../../hooks/useExerciseProgress";
 import { Spinner } from "../Atoms/Spinner";
 import { CharacterChat } from "./CharacterChat";
@@ -32,12 +29,6 @@ export function RecentExerciseTrends({
     range: progress.range,
     selectedExerciseId: exerciseId,
   });
-  const estimatedSessionCount = insights.selectedEntries.filter(
-    (entry) => getBestEstimatedOneRepMax([entry]) !== null,
-  ).length;
-  const percentChange =
-    estimatedSessionCount >= 2 ? insights.percentChange : null;
-  const trend = insights.strengthTrend;
   const profileCopy = getProfileCopy(profileName);
 
   return (
@@ -83,11 +74,15 @@ export function RecentExerciseTrends({
           <CharacterChat
             profileName={profileName}
             message={profileCopy.progressMessage(
-              trend,
+              insights.trend,
               insights.detailVariant,
             )}
           />
-          <ProgressChangeBadge change={percentChange} />
+          <ProgressChangeBadge
+            change={insights.percentChange}
+            metricLabel={insights.progressMetricLabel}
+            trend={insights.usesRepMetrics ? insights.trend : undefined}
+          />
         </>
       )}
     </section>

@@ -25,7 +25,7 @@ export function getRandomCoachOpening(profileName: string): string {
   const character = getCharacterForProfileName(profileName);
   const openings = character ? coachOpenings[character] : [];
   if (openings.length === 0) {
-    return "Choose one target and make it count—here are three ways to progress.";
+    return "Choose one target and make it count—here are some ways to progress.";
   }
 
   const randomIndex = Math.floor(Math.random() * openings.length);
@@ -75,6 +75,35 @@ function getNextRepTarget(
   const range = getRepRangeForSet(targetReps, set.setNumber);
   const reps = getRepsWithinRange(set.actualReps + 1, range);
   return reps > set.actualReps ? { reps, range } : null;
+}
+
+function getRepProgressionTarget(
+  sets: WeightedCoachSet[],
+  targetReps: (string | null)[],
+): { set: WeightedCoachSet; reps: number; range: RepRange } | null {
+  return (
+    sets
+      .flatMap((set) => {
+        const range = getRepRangeForSet(targetReps, set.setNumber);
+        if (!range || (range.max !== null && set.actualReps >= range.max)) {
+          return [];
+        }
+
+        const reps = Math.max(range.min, set.actualReps + 1);
+        if (range.max !== null && reps > range.max) return [];
+        const rangeWidth = range.max === null ? 0 : range.max - range.min;
+        const rangeProgress =
+          rangeWidth > 0
+            ? (set.actualReps - range.min) / rangeWidth
+            : set.actualReps - range.min;
+        return [{ set, reps, range, rangeProgress }];
+      })
+      .sort(
+        (first, second) =>
+          first.rangeProgress - second.rangeProgress ||
+          first.set.setNumber - second.set.setNumber,
+      )[0] ?? null
+  );
 }
 
 function formatRepRange(range: RepRange): string {
@@ -184,64 +213,6 @@ function getBodyweightSuggestions(
   ];
 }
 
-function getVolumeLoadTarget(
-  weightedSets: WeightedCoachSet[],
-  volumeLoad: number,
-  targetReps: (string | null)[],
-): {
-  setNumber: number;
-  weight: number;
-  reps: number;
-  volumeLoad: number;
-} | null {
-  const setsWithRepRoom = weightedSets.filter((set) => {
-    const range = getRepRangeForSet(targetReps, set.setNumber);
-    return range?.max === null || range === null || set.actualReps < range.max;
-  });
-  const setToProgress = setsWithRepRoom.reduce<WeightedCoachSet | null>(
-    (best, set) => (best === null || set.weight > best.weight ? set : best),
-    null,
-  );
-
-  if (setToProgress) {
-    const range = getRepRangeForSet(targetReps, setToProgress.setNumber);
-    const reps = getRepsWithinRange(setToProgress.actualReps + 1, range);
-    return {
-      setNumber: setToProgress.setNumber,
-      weight: setToProgress.weight,
-      reps,
-      volumeLoad:
-        volumeLoad + (reps - setToProgress.actualReps) * setToProgress.weight,
-    };
-  }
-
-  const heaviestSet = weightedSets.reduce<WeightedCoachSet | null>(
-    (best, set) => (best === null || set.weight > best.weight ? set : best),
-    null,
-  );
-  if (!heaviestSet) return null;
-
-  const range = getRepRangeForSet(targetReps, heaviestSet.setNumber);
-  const reps = getRepsWithinRange(heaviestSet.actualReps, range);
-  const currentSetVolume = heaviestSet.weight * heaviestSet.actualReps;
-  const requiredLoadForMoreVolume = currentSetVolume / reps;
-  const increments = Math.max(
-    1,
-    Math.floor(
-      (requiredLoadForMoreVolume - heaviestSet.weight) /
-        HEAVIEST_LOAD_INCREMENT_LB,
-    ) + 1,
-  );
-  const weight = heaviestSet.weight + increments * HEAVIEST_LOAD_INCREMENT_LB;
-
-  return {
-    setNumber: heaviestSet.setNumber,
-    weight,
-    reps,
-    volumeLoad: volumeLoad - currentSetVolume + weight * reps,
-  };
-}
-
 export function getCoachSuggestions(
   profileName: string,
   previousSets: CoachSet[],
@@ -279,13 +250,6 @@ export function getCoachSuggestions(
       heaviest === null || set.weight > heaviest.weight ? set : heaviest,
     null,
   );
-  const volumeLoad =
-    completedSets.length > 0 && weightedSets.length === completedSets.length
-      ? weightedSets.reduce(
-          (total, set) => total + set.weight * set.actualReps,
-          0,
-        )
-      : null;
   const estimatedOneRepMaxTarget =
     bestEstimatedSet === null
       ? null
@@ -293,18 +257,14 @@ export function getCoachSuggestions(
           bestEstimatedSet,
           getRepRangeForSet(targetReps, bestEstimatedSet.setNumber),
         );
-  const volumeLoadTarget =
-    volumeLoad === null
-      ? null
-      : getVolumeLoadTarget(weightedSets, volumeLoad, targetReps);
+  const repProgressionTarget = getRepProgressionTarget(
+    weightedSets,
+    targetReps,
+  );
   const estimatedOneRepMaxRange =
     bestEstimatedSet === null
       ? null
       : getRepRangeForSet(targetReps, bestEstimatedSet.setNumber);
-  const volumeLoadRange =
-    volumeLoadTarget === null
-      ? null
-      : getRepRangeForSet(targetReps, volumeLoadTarget.setNumber);
   const heaviestLoadRange =
     heaviestSet === null
       ? null
@@ -327,13 +287,14 @@ export function getCoachSuggestions(
             ? "Log a weighted set with reps to establish a numeric baseline."
             : `Last best: ${formatNumber(bestEstimatedSet.weight)} lb × ${bestEstimatedSet.actualReps} reps. Target: ${formatNumber(estimatedOneRepMaxTarget.weight)} lb × ${estimatedOneRepMaxTarget.reps} reps${estimatedOneRepMaxRange ? ` (within the ${formatRepRange(estimatedOneRepMaxRange)} rep range)` : ""}.`,
       },
-      {
-        label: "Volume load",
-        description:
-          volumeLoad === null || volumeLoadTarget === null
-            ? "Log weight and reps for every set in a session to calculate a numeric target."
-            : `Last total: ${formatNumber(volumeLoad)} lb·reps. Target: ${formatNumber(volumeLoadTarget.volumeLoad)} lb·reps; progress Set ${volumeLoadTarget.setNumber} to ${formatNumber(volumeLoadTarget.weight)} lb × ${volumeLoadTarget.reps} reps${volumeLoadRange ? ` (within the ${formatRepRange(volumeLoadRange)} rep range)` : ""}.`,
-      },
+      ...(repProgressionTarget
+        ? [
+            {
+              label: "Add reps",
+              description: `Last: Set ${repProgressionTarget.set.setNumber}, ${formatNumber(repProgressionTarget.set.weight)} lb × ${repProgressionTarget.set.actualReps} reps. Target: ${repProgressionTarget.reps} reps at the same load (within the ${formatRepRange(repProgressionTarget.range)} rep range).`,
+            },
+          ]
+        : []),
       {
         label: "Heaviest load",
         description:
