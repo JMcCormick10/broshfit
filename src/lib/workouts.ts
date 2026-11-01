@@ -55,6 +55,7 @@ export type WorkoutSessionSet = {
 
 export type WorkoutSessionExercise = {
   id: string;
+  sourceWorkoutExerciseId: string | null;
   exerciseId: string;
   exerciseName: string;
   equipment: string;
@@ -76,12 +77,15 @@ export type WorkoutSession = {
 
 export type ProgressExerciseSet = {
   setNumber: number;
+  targetReps: string | null;
   actualReps: number | null;
   actualWeight: number | null;
 };
 
 export type ExerciseProgressEntry = {
   id: string;
+  sessionId: string;
+  sourceWorkoutExerciseId: string | null;
   exerciseId: string;
   exerciseName: string;
   equipment: string;
@@ -90,21 +94,27 @@ export type ExerciseProgressEntry = {
 };
 
 export async function getExerciseProgress(
-  exerciseId?: string,
+  exerciseId?: string | readonly string[],
 ): Promise<ExerciseProgressEntry[]> {
+  const exerciseIds =
+    typeof exerciseId === "string" ? [exerciseId] : exerciseId;
+  if (exerciseIds?.length === 0) return [];
+
   const client = getSupabaseClient();
   const entriesQuery = client
     .from("workout_session_exercises")
-    .select("id, session_id, exercise_id, completed_at")
+    .select(
+      "id, session_id, source_workout_exercise_id, exercise_id, completed_at",
+    )
     .not("completed_at", "is", null);
   const exercisesQuery = client
     .from("exercises")
     .select("id, name, equipment");
   const [entriesResult, exercisesResult] = await Promise.all([
-    exerciseId
-      ? entriesQuery.eq("exercise_id", exerciseId).order("completed_at", { ascending: false })
-      : entriesQuery.order("completed_at", { ascending: false }),
-    exerciseId ? exercisesQuery.eq("id", exerciseId) : exercisesQuery,
+    exerciseIds ? entriesQuery.in("exercise_id", [...exerciseIds]) : entriesQuery,
+    exerciseIds
+      ? exercisesQuery.in("id", [...exerciseIds])
+      : exercisesQuery,
   ]);
 
   if (entriesResult.error) throw entriesResult.error;
@@ -116,7 +126,9 @@ export async function getExerciseProgress(
   const [setsResult, sessionResult, completionResult] = await Promise.all([
     client
       .from("workout_session_sets")
-      .select("session_exercise_id, set_number, actual_reps, actual_weight")
+      .select(
+        "session_exercise_id, set_number, target_reps, actual_reps, actual_weight",
+      )
       .in("session_exercise_id", entryIds)
       .order("set_number", { ascending: true }),
     client
@@ -152,23 +164,32 @@ export async function getExerciseProgress(
   const setsByEntry = new Map<string, ProgressExerciseSet[]>();
   for (const set of setsResult.data) {
     const sets = setsByEntry.get(set.session_exercise_id) ?? [];
-    sets.push({ setNumber: set.set_number, actualReps: set.actual_reps, actualWeight: set.actual_weight });
+    sets.push({
+      setNumber: set.set_number,
+      targetReps: set.target_reps,
+      actualReps: set.actual_reps,
+      actualWeight: set.actual_weight,
+    });
     setsByEntry.set(set.session_exercise_id, sets);
   }
 
-  return entriesResult.data.map((entry) => {
+  return entriesResult.data.flatMap((entry) => {
+    const completedAt =
+      workoutCompletedAtBySessionId.get(entry.session_id) ??
+      sessionCompletedAtById.get(entry.session_id);
+    if (completedAt === undefined || completedAt === null) return [];
+
     const exercise = exerciseById.get(entry.exercise_id);
-    return {
+    return [{
       id: entry.id,
+      sessionId: entry.session_id,
+      sourceWorkoutExerciseId: entry.source_workout_exercise_id,
       exerciseId: entry.exercise_id,
       exerciseName: exercise?.name ?? "Exercise unavailable",
       equipment: exercise?.equipment ?? "",
-      completedAt:
-        workoutCompletedAtBySessionId.get(entry.session_id) ??
-        sessionCompletedAtById.get(entry.session_id) ??
-        entry.completed_at!,
+      completedAt,
       sets: setsByEntry.get(entry.id) ?? [],
-    };
+    }];
   }).sort(
     (first, second) =>
       new Date(second.completedAt).getTime() -
@@ -477,6 +498,7 @@ export async function getWorkoutSession(
 
       return {
         id: entry.id,
+        sourceWorkoutExerciseId: entry.source_workout_exercise_id,
         exerciseId: entry.exercise_id,
         exerciseName: exercise?.name ?? "Exercise unavailable",
         equipment: exercise?.equipment ?? "",

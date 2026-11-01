@@ -22,7 +22,7 @@ export type ReorderNotice = {
 
 type UseActiveWorkoutSessionOptions = {
   onDiscard: () => void;
-  onFinish: (routineName: string) => void;
+  onFinish: (session: WorkoutSession) => void;
   onSessionChange: (session: WorkoutSession) => void;
 };
 
@@ -268,7 +268,7 @@ export function useActiveWorkoutSession(
 
     try {
       await finishWorkoutSession(session.id, allowIncomplete);
-      onFinish(session.routineName);
+      onFinish(session);
     } catch (finishError: unknown) {
       setError(
         finishError instanceof Error

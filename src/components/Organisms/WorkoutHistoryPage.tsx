@@ -3,6 +3,7 @@ import { Button } from "../Atoms/Button";
 import { Spinner } from "../Atoms/Spinner";
 import { Toast } from "../Atoms/Toast";
 import { CompletedWorkoutEditorDialog } from "./CompletedWorkoutEditorDialog";
+import { WorkoutReportDialog } from "./WorkoutReportDialog";
 import {
   getCompletedWorkoutHistory,
   type CompletedWorkoutSummary,
@@ -10,9 +11,24 @@ import {
 import { useAsyncData } from "../../hooks/useAsyncData";
 import type { ProfileNotification } from "../../constants/profile-copy/notifications";
 
-export function WorkoutHistoryPage({ profileName }: { profileName: string }) {
+export function WorkoutHistoryPage({
+  initialSelectedWorkout = null,
+  onReportClosed,
+  onViewLongTermTrends,
+  profileName,
+}: {
+  initialSelectedWorkout?: CompletedWorkoutSummary | null;
+  onReportClosed: () => void;
+  onViewLongTermTrends: (
+    exerciseId: string,
+    workout: CompletedWorkoutSummary,
+  ) => void;
+  profileName: string;
+}) {
   const [selectedWorkout, setSelectedWorkout] =
-    useState<CompletedWorkoutSummary | null>(null);
+    useState<CompletedWorkoutSummary | null>(initialSelectedWorkout);
+  const [isEditingSelectedWorkout, setIsEditingSelectedWorkout] =
+    useState(false);
   const [notice, setNotice] = useState<ProfileNotification | null>(null);
   const {
     data: workouts,
@@ -59,8 +75,11 @@ export function WorkoutHistoryPage({ profileName }: { profileName: string }) {
             <li key={workout.id}>
               <Button
                 variant="menu-item"
-                aria-label={`Edit ${workout.routineName}`}
-                onClick={() => setSelectedWorkout(workout)}
+                aria-label={`View report for ${workout.routineName}`}
+                onClick={() => {
+                  setSelectedWorkout(workout);
+                  setIsEditingSelectedWorkout(false);
+                }}
                 type="button"
               >
                 <span className="flex-1 text-left font-semibold">
@@ -78,9 +97,21 @@ export function WorkoutHistoryPage({ profileName }: { profileName: string }) {
         </ul>
       )}
 
-      {selectedWorkout && (
+      {selectedWorkout && !isEditingSelectedWorkout && (
+        <WorkoutReportDialog
+          onClose={() => {
+            setSelectedWorkout(null);
+            onReportClosed();
+          }}
+          onEditWorkout={() => setIsEditingSelectedWorkout(true)}
+          onViewLongTermTrends={onViewLongTermTrends}
+          profileName={profileName}
+          workout={selectedWorkout}
+        />
+      )}
+      {selectedWorkout && isEditingSelectedWorkout && (
         <CompletedWorkoutEditorDialog
-          onClose={() => setSelectedWorkout(null)}
+          onClose={() => setIsEditingSelectedWorkout(false)}
           onSaved={async (action) => {
             await refreshHistory();
             setNotice({
@@ -88,6 +119,10 @@ export function WorkoutHistoryPage({ profileName }: { profileName: string }) {
               action: action === "deleted" ? "deleted" : "updated",
               name: selectedWorkout.routineName,
             });
+            if (action === "deleted") {
+              setSelectedWorkout(null);
+              onReportClosed();
+            }
           }}
           workout={selectedWorkout}
         />

@@ -2,6 +2,8 @@ import {
   characterProfileText,
   exerciseHistoryVoices,
   getCharacterForProfileName,
+  workoutReportMessages,
+  type WorkoutReportCategory,
 } from "./profile-copy/character-copy";
 import {
   getProgressMessage,
@@ -83,4 +85,22 @@ export function getExerciseHistoryContextMessage(
   return context
     ? `${opening} ${context} ${voice?.closing ?? ""}`.trim()
     : opening;
+}
+
+export function getWorkoutReportMessage(
+  profileName: string,
+  category: WorkoutReportCategory,
+  workoutId: string,
+): string {
+  const character = getCharacterForProfileName(profileName);
+  if (!character) {
+    return "Your workout is logged. Keep showing up, and your progress will build over time.";
+  }
+
+  const messages = workoutReportMessages[character][category];
+  let seed = 0;
+  for (const characterCode of workoutId) {
+    seed = (seed * 31 + characterCode.charCodeAt(0)) >>> 0;
+  }
+  return messages[seed % messages.length];
 }

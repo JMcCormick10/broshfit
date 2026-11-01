@@ -19,6 +19,7 @@ import { WorkoutRoutinePickerDialog } from "./WorkoutRoutinePickerDialog";
 import { ActiveWorkoutDashboard } from "./ActiveWorkoutDashboard";
 import { WorkoutHistoryPage } from "./WorkoutHistoryPage";
 import { CompletedWorkoutEditorDialog } from "./CompletedWorkoutEditorDialog";
+import { WorkoutReportDialog } from "./WorkoutReportDialog";
 import { useAsyncData } from "../../hooks/useAsyncData";
 import { Toast } from "../Atoms/Toast";
 import { getProfileAvatarUrl } from "../../lib/profile-avatar";
@@ -34,6 +35,11 @@ type ProfileLandingPageProps = {
   profile: Profile;
 };
 
+type WorkoutReportReturn = {
+  sourceView: "dashboard" | "workout-history";
+  workout: CompletedWorkoutSummary;
+};
+
 export function ProfileLandingPage({
   isSigningOut,
   logoutError,
@@ -43,6 +49,9 @@ export function ProfileLandingPage({
   const [activeView, setActiveView] = useState<
     "dashboard" | "exercises" | "workout-routines" | "workout-history" | "progress"
   >("dashboard");
+  const [initialProgressExerciseId, setInitialProgressExerciseId] = useState<
+    string | null
+  >(null);
   const profileAvatarUrl = getProfileAvatarUrl(profile.name);
   const profileTheme = getProfileTheme(profile.name);
   const profileCopy = getProfileCopy(profile.name);
@@ -75,8 +84,46 @@ export function ProfileLandingPage({
   const [activeWorkoutError, setActiveWorkoutError] = useState<string | null>(
     null,
   );
-  const [completedWorkoutToEdit, setCompletedWorkoutToEdit] =
+  const [completedWorkoutToReport, setCompletedWorkoutToReport] =
     useState<CompletedWorkoutSummary | null>(null);
+  const [isEditingCompletedWorkout, setIsEditingCompletedWorkout] =
+    useState(false);
+  const [workoutReportReturn, setWorkoutReportReturn] =
+    useState<WorkoutReportReturn | null>(null);
+
+  function navigateToView(view: typeof activeView) {
+    setWorkoutReportReturn(null);
+    setInitialProgressExerciseId(null);
+    setCompletedWorkoutToReport(null);
+    setIsEditingCompletedWorkout(false);
+    setActiveView(view);
+  }
+
+  function openLongTermTrends(
+    exerciseId: string,
+    workout: CompletedWorkoutSummary,
+  ) {
+    const sourceView =
+      activeView === "workout-history" ? "workout-history" : "dashboard";
+    setWorkoutReportReturn({ sourceView, workout });
+    setInitialProgressExerciseId(exerciseId);
+    setCompletedWorkoutToReport(
+      sourceView === "dashboard" ? workout : null,
+    );
+    setIsEditingCompletedWorkout(false);
+    setActiveView("progress");
+  }
+
+  function handleBackToWorkoutReport() {
+    if (!workoutReportReturn) return;
+
+    setInitialProgressExerciseId(null);
+    setActiveView(workoutReportReturn.sourceView);
+    if (workoutReportReturn.sourceView === "dashboard") {
+      setCompletedWorkoutToReport(workoutReportReturn.workout);
+      setWorkoutReportReturn(null);
+    }
+  }
 
   useEffect(() => {
     const root = document.documentElement;
@@ -190,12 +237,20 @@ export function ProfileLandingPage({
     setActiveWorkoutSession(session);
   }
 
-  function handleWorkoutSessionFinished(routineName: string) {
+  function handleWorkoutSessionFinished(session: WorkoutSession) {
     setActiveWorkoutSession(null);
+    setWorkoutReportReturn(null);
+    setCompletedWorkoutToReport({
+      id: session.id,
+      routineName: session.routineName,
+      completedAt: new Date().toISOString(),
+      sessionId: session.id,
+    });
+    setIsEditingCompletedWorkout(false);
     setExerciseNotice({
       type: "workout",
       action: "completed",
-      name: routineName,
+      name: session.routineName,
     });
     refreshRecentWorkouts();
   }
@@ -219,7 +274,7 @@ export function ProfileLandingPage({
             type="button"
             onClick={() => {
               setExerciseNotice(null);
-              setActiveView("dashboard");
+              navigateToView("dashboard");
             }}
             aria-label="Go to dashboard"
             className="font-heading text-lg font-bold tracking-[0.18em] transition hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
@@ -272,7 +327,7 @@ export function ProfileLandingPage({
                   <Button
                     variant="menu-item"
                     onClick={() => {
-                      setActiveView("dashboard");
+                      navigateToView("dashboard");
                       setIsMenuOpen(false);
                     }}
                     type="button"
@@ -283,7 +338,7 @@ export function ProfileLandingPage({
                     variant="menu-item"
                     onClick={() => {
                       setExerciseNotice(null);
-                      setActiveView("exercises");
+                      navigateToView("exercises");
                       setIsMenuOpen(false);
                     }}
                     type="button"
@@ -294,7 +349,7 @@ export function ProfileLandingPage({
                     variant="menu-item"
                     onClick={() => {
                       setExerciseNotice(null);
-                      setActiveView("workout-routines");
+                      navigateToView("workout-routines");
                       setIsMenuOpen(false);
                     }}
                     type="button"
@@ -305,7 +360,7 @@ export function ProfileLandingPage({
                     variant="menu-item"
                     onClick={() => {
                       setExerciseNotice(null);
-                      setActiveView("workout-history");
+                      navigateToView("workout-history");
                       setIsMenuOpen(false);
                     }}
                     type="button"
@@ -316,7 +371,7 @@ export function ProfileLandingPage({
                     variant="menu-item"
                     onClick={() => {
                       setExerciseNotice(null);
-                      setActiveView("progress");
+                      navigateToView("progress");
                       setIsMenuOpen(false);
                     }}
                     type="button"
@@ -349,7 +404,7 @@ export function ProfileLandingPage({
               variant="outline"
               onClick={() => {
                 setExerciseNotice(null);
-                setActiveView("dashboard");
+                navigateToView("dashboard");
               }}
               type="button"
             >
@@ -469,7 +524,7 @@ export function ProfileLandingPage({
                   {recentWorkouts.length > 0 && (
                     <Button
                       variant="outline-small"
-                      onClick={() => setActiveView("workout-history")}
+                      onClick={() => navigateToView("workout-history")}
                       type="button"
                     >
                       View More
@@ -493,8 +548,12 @@ export function ProfileLandingPage({
                       <li key={workout.id}>
                         <Button
                           variant="menu-item"
-                          aria-label={`Edit ${workout.routineName}`}
-                          onClick={() => setCompletedWorkoutToEdit(workout)}
+                          aria-label={`View report for ${workout.routineName}`}
+                          onClick={() => {
+                            setWorkoutReportReturn(null);
+                            setCompletedWorkoutToReport(workout);
+                            setIsEditingCompletedWorkout(false);
+                          }}
                           type="button"
                         >
                           <span className="flex-1 text-left font-semibold">
@@ -532,9 +591,25 @@ export function ProfileLandingPage({
             refreshKey={workoutListVersion}
           />
         ) : activeView === "workout-history" ? (
-          <WorkoutHistoryPage profileName={profile.name} />
+          <WorkoutHistoryPage
+            initialSelectedWorkout={
+              workoutReportReturn?.sourceView === "workout-history"
+                ? workoutReportReturn.workout
+                : null
+            }
+            onReportClosed={() => setWorkoutReportReturn(null)}
+            onViewLongTermTrends={openLongTermTrends}
+            profileName={profile.name}
+          />
         ) : (
-          <ExerciseProgressPage profileCopy={profileCopy} profileName={profile.name} />
+          <ExerciseProgressPage
+            initialExerciseId={initialProgressExerciseId}
+            onBackToReport={
+              workoutReportReturn ? handleBackToWorkoutReport : undefined
+            }
+            profileCopy={profileCopy}
+            profileName={profile.name}
+          />
         )}
       </div>
       {isExerciseDialogOpen && (
@@ -557,18 +632,38 @@ export function ProfileLandingPage({
           onStart={handleStartWorkout}
         />
       )}
-      {completedWorkoutToEdit && (
+      {activeView === "dashboard" &&
+        completedWorkoutToReport &&
+        !isEditingCompletedWorkout && (
+        <WorkoutReportDialog
+          onClose={() => {
+            setCompletedWorkoutToReport(null);
+            setWorkoutReportReturn(null);
+          }}
+          onEditWorkout={() => setIsEditingCompletedWorkout(true)}
+          onViewLongTermTrends={openLongTermTrends}
+          profileName={profile.name}
+          workout={completedWorkoutToReport}
+        />
+      )}
+      {activeView === "dashboard" &&
+        completedWorkoutToReport &&
+        isEditingCompletedWorkout && (
         <CompletedWorkoutEditorDialog
-          onClose={() => setCompletedWorkoutToEdit(null)}
+          onClose={() => setIsEditingCompletedWorkout(false)}
           onSaved={async (action) => {
             await refreshRecentWorkouts();
             setExerciseNotice({
               type: "workout-history",
               action: action === "deleted" ? "deleted" : "updated",
-              name: completedWorkoutToEdit.routineName,
+              name: completedWorkoutToReport.routineName,
             });
+            if (action === "deleted") {
+              setCompletedWorkoutToReport(null);
+              setWorkoutReportReturn(null);
+            }
           }}
-          workout={completedWorkoutToEdit}
+          workout={completedWorkoutToReport}
         />
       )}
       {exerciseNotice && (

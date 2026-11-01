@@ -39,15 +39,19 @@ function getMetricTone(change: number | null) {
 }
 
 type ExerciseProgressPageProps = {
+  initialExerciseId?: string | null;
+  onBackToReport?: () => void;
   profileCopy: ProfileCopy;
   profileName: string;
 };
 
 export function ExerciseProgressPage({
+  initialExerciseId,
+  onBackToReport,
   profileCopy,
   profileName,
 }: ExerciseProgressPageProps) {
-  const progress = useExerciseProgress();
+  const progress = useExerciseProgress(undefined, initialExerciseId);
   const insights = useExerciseProgressInsights(progress);
   useEffect(() => {
     if (progress.selectedExerciseId)
@@ -81,6 +85,7 @@ export function ExerciseProgressPage({
           selected={selected}
           progress={progress}
           insights={insights}
+          onBackToReport={onBackToReport}
           profileCopy={profileCopy}
           profileName={profileName}
         />
@@ -264,6 +269,7 @@ function ExerciseDetail({
   selected,
   progress,
   insights,
+  onBackToReport,
   profileCopy,
   profileName,
 }: {
@@ -272,6 +278,7 @@ function ExerciseDetail({
   >;
   progress: ReturnType<typeof useExerciseProgress>;
   insights: ReturnType<typeof useExerciseProgressInsights>;
+  onBackToReport?: () => void;
   profileCopy: ProfileCopy;
   profileName: string;
 }) {
@@ -281,9 +288,11 @@ function ExerciseDetail({
         <Button
           variant="outline-small"
           type="button"
-          onClick={() => progress.setSelectedExerciseId(null)}
+          onClick={
+            onBackToReport ?? (() => progress.setSelectedExerciseId(null))
+          }
         >
-          ← Back to progress
+          {onBackToReport ? "← Back to report" : "← Back to progress"}
         </Button>
         <header>
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-secondary">

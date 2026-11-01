@@ -13,7 +13,7 @@ import { ActiveWorkoutExerciseDialog } from "./ActiveWorkoutExerciseDialog";
 
 type ActiveWorkoutDashboardProps = {
   onDiscard: () => void;
-  onFinish: (routineName: string) => void;
+  onFinish: (session: WorkoutSession) => void;
   onSessionChange: (session: WorkoutSession) => void;
   profileName: string;
   motivationQuote: string;

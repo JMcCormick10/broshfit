@@ -11,9 +11,14 @@ const RANGE_MONTHS: Record<Exclude<ProgressRange, "all">, number> = {
   year: 12,
 };
 
-export function useExerciseProgress(exerciseId?: string) {
+export function useExerciseProgress(
+  exerciseId?: string,
+  initialSelectedExerciseId?: string | null,
+) {
   const [range, setRange] = useState<ProgressRange>("3months");
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(
+    initialSelectedExerciseId ?? null,
+  );
   const { data, error, isLoading } = useAsyncData(
     () => getExerciseProgress(exerciseId),
     [exerciseId],
