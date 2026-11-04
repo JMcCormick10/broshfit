@@ -11,6 +11,7 @@ import { RecentExerciseTrends } from "./RecentExerciseTrends";
 type ExerciseHistoryActionsProps = {
   contextMessage: string | null;
   exerciseId: string;
+  muscleGroups: readonly string[];
   previousSets: ExerciseHistorySet[];
   profileName: string;
   targetReps: (string | null)[];
@@ -19,6 +20,7 @@ type ExerciseHistoryActionsProps = {
 export function ExerciseHistoryActions({
   contextMessage,
   exerciseId,
+  muscleGroups,
   previousSets,
   profileName,
   targetReps,
@@ -32,6 +34,7 @@ export function ExerciseHistoryActions({
     previousSets,
     targetReps,
     coachOpening,
+    muscleGroups,
   );
   const isContextOpen = openPanel === "context";
   const isTrendsOpen = openPanel === "trends";

@@ -12,6 +12,21 @@ Use `getSupabaseClient()` from `src/lib/supabase.ts` to access Supabase. These `
 
 Each profile signs in with the Auth email `profile-<profile-id>@broshfit.invalid`, where `<profile-id>` is the profile UUID. Provision a confirmed Supabase Auth user with that exact email and the desired password for each profile. The `.invalid` domain cannot receive email, so email confirmation and password-reset email flows are unavailable for these accounts.
 
+### Copy completed workout history to Ginyu
+
+The `Test` profile is Ginyu's sandbox. Workout routines and exercises are shared globally, so the copy script reuses those IDs and copies only completed workout sessions, their exercise/set logs, and completion records.
+
+To select a source profile and replace Ginyu's completed history from the command line:
+
+1. Make sure the Supabase CLI is authenticated (`npx supabase login`) and linked to the intended project (`npx supabase link --project-ref <project-ref>`).
+2. Run `npm run copy-workout-history`, select a source profile, review the source/target counts, and type `COPY` to confirm.
+
+The command replaces Ginyu's completed workout history, leaves any in-progress Ginyu session untouched, and does not modify the source profile. It uses the linked Supabase project and requires a matching Auth user for both profiles. For a manual SQL Editor run, use [`supabase/scripts/copy-completed-workout-history.sql`](./supabase/scripts/copy-completed-workout-history.sql); it defaults to a dry run, and should only be applied after reviewing its preview notices.
+
+After copying Brad's history to Test, [`supabase/scripts/correct-test-workout-exercises.sql`](./supabase/scripts/correct-test-workout-exercises.sql) can correct the one-time exercise substitutions. It keeps the first two completed Front Squat sessions, changes later Front Squat entries to Back Squat, and changes the Chin Ups entry in Test's latest completed workout to Wide Grip Pull-up. The correction script is dry-run-first and only touches Test's saved session exercises.
+
+Start a routine-free workout from the workout picker with **Start Freestyle Workout**, then add exercises as you go. At least one exercise must be completed before the workout can be saved. Completed exercises are compared with the most recent completed entry for that exercise, across routines and freestyle workouts.
+
 ## GitHub Pages deployment
 
 The workflow in `.github/workflows/deploy.yml` builds and deploys the app to GitHub Pages when changes are pushed to `main` or when run manually. It uses the Pages-provided base path, so project sites and root/custom-domain sites get the correct asset and PWA URLs.

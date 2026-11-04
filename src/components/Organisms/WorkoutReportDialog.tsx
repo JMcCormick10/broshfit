@@ -67,9 +67,7 @@ function getExerciseAssessment(
   progressEntries: ExerciseProgressEntry[],
 ): WorkoutReportExerciseAssessment {
   const history = progressEntries.filter(
-    (entry) =>
-      entry.exerciseId === exercise.exerciseId &&
-      entry.sourceWorkoutExerciseId !== null,
+    (entry) => entry.exerciseId === exercise.exerciseId,
   );
   const currentCompletionTime = new Date(workoutCompletedAt).getTime();
   const previous =
@@ -106,11 +104,7 @@ export function WorkoutReportDialog({
       const exerciseIds = [
         ...new Set(
           session.exercises
-            .filter(
-              (exercise) =>
-                exercise.completedAt !== null &&
-                exercise.sourceWorkoutExerciseId !== null,
-            )
+            .filter((exercise) => exercise.completedAt !== null)
             .map((exercise) => exercise.exerciseId),
         ),
       ];

@@ -78,7 +78,8 @@ export function WorkoutBuilderDialog({
                   Exercises and sets
                 </h3>
                 <p className="mt-0.5 text-xs text-muted-steel">
-                  Reps are optional suggested targets for each set.
+                  Set an optional suggested rep range for each set. The maximum
+                  starts at the minimum and can be adjusted.
                 </p>
               </div>
               <Button

@@ -7,11 +7,13 @@ import { useAsyncData } from "../../hooks/useAsyncData";
 
 type WorkoutRoutinePickerDialogProps = {
   onClose: () => void;
+  onStartFreestyle: () => Promise<void>;
   onStart: (routineId: string) => Promise<void>;
 };
 
 export function WorkoutRoutinePickerDialog({
   onClose,
+  onStartFreestyle,
   onStart,
 }: WorkoutRoutinePickerDialogProps) {
   const [selectedRoutineId, setSelectedRoutineId] = useState("");
@@ -45,11 +47,27 @@ export function WorkoutRoutinePickerDialog({
     }
   }
 
+  async function handleStartFreestyle() {
+    setIsStarting(true);
+    setActionError(null);
+
+    try {
+      await onStartFreestyle();
+    } catch (error: unknown) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "Could not start a freestyle workout.",
+      );
+      setIsStarting(false);
+    }
+  }
+
   return (
     <DialogShell
       closeDisabled={isStarting}
       closeLabel="Close routine picker"
-      description="Choose an active routine to begin."
+      description="Choose an active routine or start a freestyle workout."
       eyebrow="Training log // new session"
       onClose={onClose}
       title="Start New Workout"
@@ -95,7 +113,7 @@ export function WorkoutRoutinePickerDialog({
         </div>
       )}
 
-      {actionError && routines.length > 0 && (
+      {actionError && (
         <p
           className="mt-4 rounded-md border border-danger/40 bg-danger/5 px-4 py-3 text-sm"
           role="alert"
@@ -104,7 +122,7 @@ export function WorkoutRoutinePickerDialog({
         </p>
       )}
 
-      <div className="mt-6 flex justify-end gap-3 border-t border-border pt-4">
+      <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border pt-4">
         <Button
           variant="outline"
           disabled={isStarting}
@@ -112,6 +130,14 @@ export function WorkoutRoutinePickerDialog({
           type="button"
         >
           Cancel
+        </Button>
+        <Button
+          variant="outline-secondary"
+          disabled={isStarting}
+          onClick={() => void handleStartFreestyle()}
+          type="button"
+        >
+          {isStarting ? "Starting..." : "Start Freestyle Workout"}
         </Button>
         <Button
           variant="primary"

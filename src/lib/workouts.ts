@@ -56,6 +56,7 @@ export type WorkoutSessionSet = {
 export type WorkoutSessionExercise = {
   id: string;
   sourceWorkoutExerciseId: string | null;
+  wasRoutineExercise: boolean;
   exerciseId: string;
   exerciseName: string;
   equipment: string;
@@ -69,7 +70,7 @@ export type WorkoutSessionExercise = {
 
 export type WorkoutSession = {
   id: string;
-  routineId: string;
+  routineId: string | null;
   routineName: string;
   startedAt: string;
   exercises: WorkoutSessionExercise[];
@@ -86,6 +87,7 @@ export type ExerciseProgressEntry = {
   id: string;
   sessionId: string;
   sourceWorkoutExerciseId: string | null;
+  wasRoutineExercise: boolean;
   exerciseId: string;
   exerciseName: string;
   equipment: string;
@@ -104,7 +106,7 @@ export async function getExerciseProgress(
   const entriesQuery = client
     .from("workout_session_exercises")
     .select(
-      "id, session_id, source_workout_exercise_id, exercise_id, completed_at",
+      "id, session_id, source_workout_exercise_id, was_routine_exercise, exercise_id, completed_at",
     )
     .not("completed_at", "is", null);
   const exercisesQuery = client
@@ -184,6 +186,7 @@ export async function getExerciseProgress(
       id: entry.id,
       sessionId: entry.session_id,
       sourceWorkoutExerciseId: entry.source_workout_exercise_id,
+      wasRoutineExercise: entry.was_routine_exercise,
       exerciseId: entry.exercise_id,
       exerciseName: exercise?.name ?? "Exercise unavailable",
       equipment: exercise?.equipment ?? "",
@@ -408,27 +411,63 @@ export async function getCompletedWorkoutHistory(
 
   const workoutIds = [
     ...new Set(
-      completionResult.data.map((completion) => completion.workout_id),
+      completionResult.data.flatMap((completion) =>
+        completion.workout_id ? [completion.workout_id] : [],
+      ),
     ),
   ];
-  const workoutResult = await client
-    .from("workouts")
-    .select("id, name")
-    .in("id", workoutIds);
+  const sessionIds = [
+    ...new Set(
+      completionResult.data.flatMap((completion) =>
+        completion.session_id ? [completion.session_id] : [],
+      ),
+    ),
+  ];
+  const workoutNames = new Map<string, string>();
+  const freestyleNames = new Map<string, string | null>();
 
-  if (workoutResult.error) throw workoutResult.error;
+  if (workoutIds.length > 0) {
+    const workoutResult = await client
+      .from("workouts")
+      .select("id, name")
+      .in("id", workoutIds);
+    if (workoutResult.error) throw workoutResult.error;
+    for (const workout of workoutResult.data) {
+      workoutNames.set(workout.id, workout.name);
+    }
+  }
 
-  const workoutNames = new Map(
-    workoutResult.data.map((workout) => [workout.id, workout.name]),
-  );
+  if (sessionIds.length > 0) {
+    const sessionResult = await client
+      .from("workout_sessions")
+      .select("id, workout_name")
+      .in("id", sessionIds);
+    if (sessionResult.error) throw sessionResult.error;
+    for (const session of sessionResult.data) {
+      freestyleNames.set(session.id, session.workout_name);
+    }
+  }
 
-  return completionResult.data.map((completion) => ({
-    id: completion.id,
-    routineName:
-      workoutNames.get(completion.workout_id) ?? "Deleted workout routine",
-    completedAt: completion.completed_at,
-    sessionId: completion.session_id,
-  }));
+  return completionResult.data.map((completion) => {
+    const routineName =
+      completion.workout_id !== null
+        ? workoutNames.get(completion.workout_id) ?? "Deleted workout routine"
+        : completion.session_id
+          ? freestyleNames.get(completion.session_id)
+          : null;
+    if (!routineName) {
+      throw new Error(
+        `Completed workout ${completion.id} is missing its workout name.`,
+      );
+    }
+
+    return {
+      id: completion.id,
+      routineName,
+      completedAt: completion.completed_at,
+      sessionId: completion.session_id,
+    };
+  });
 }
 
 export async function getWorkoutSession(
@@ -437,29 +476,37 @@ export async function getWorkoutSession(
   const client = getSupabaseClient();
   const { data: session, error: sessionError } = await client
     .from("workout_sessions")
-    .select("id, workout_id, started_at")
+    .select("id, workout_id, workout_name, started_at")
     .eq("id", sessionId)
     .single();
 
   if (sessionError) throw sessionError;
 
-  const [workoutResult, entriesResult, exercisesResult] = await Promise.all([
-    client
+  let routineName = session.workout_name;
+  if (session.workout_id !== null) {
+    const workoutResult = await client
       .from("workouts")
       .select("name")
       .eq("id", session.workout_id)
-      .single(),
+      .single();
+    if (workoutResult.error) throw workoutResult.error;
+    routineName = workoutResult.data.name;
+  }
+  if (!routineName) {
+    throw new Error(`Workout session ${sessionId} is missing its name.`);
+  }
+
+  const [entriesResult, exercisesResult] = await Promise.all([
     client
       .from("workout_session_exercises")
       .select(
-        "id, session_id, source_workout_exercise_id, exercise_id, routine_position, prescribed_set_count, completed_order, completed_at, notes",
+        "id, session_id, source_workout_exercise_id, was_routine_exercise, exercise_id, routine_position, prescribed_set_count, completed_order, completed_at, notes",
       )
       .eq("session_id", sessionId)
       .order("routine_position", { ascending: true }),
     client.from("exercises").select("id, name, equipment"),
   ]);
 
-  if (workoutResult.error) throw workoutResult.error;
   if (entriesResult.error) throw entriesResult.error;
   if (exercisesResult.error) throw exercisesResult.error;
 
@@ -491,7 +538,7 @@ export async function getWorkoutSession(
   return {
     id: session.id,
     routineId: session.workout_id,
-    routineName: workoutResult.data.name,
+    routineName,
     startedAt: session.started_at,
     exercises: entriesResult.data.map((entry: WorkoutSessionExerciseRow) => {
       const exercise = exercisesById.get(entry.exercise_id);
@@ -499,6 +546,7 @@ export async function getWorkoutSession(
       return {
         id: entry.id,
         sourceWorkoutExerciseId: entry.source_workout_exercise_id,
+        wasRoutineExercise: entry.was_routine_exercise,
         exerciseId: entry.exercise_id,
         exerciseName: exercise?.name ?? "Exercise unavailable",
         equipment: exercise?.equipment ?? "",
@@ -529,6 +577,7 @@ export type ExerciseHistory = {
   notes: string;
   sets: ExerciseHistorySet[];
   contextSentences: string[];
+  muscleGroups: string[];
 };
 
 function formatOrdinal(position: number): string {
@@ -735,6 +784,7 @@ export async function getExerciseHistory(
       actualWeight: set.actual_weight,
     })),
     contextSentences,
+    muscleGroups: [...new Set([...primaryMuscleGroups, ...secondaryMuscleGroups])],
   };
 }
 
@@ -761,6 +811,16 @@ export async function startWorkoutSession(
 
   if (error) throw error;
   if (!data) throw new Error("Workout session could not be started.");
+  return getWorkoutSession(data);
+}
+
+export async function startFreestyleWorkoutSession(): Promise<WorkoutSession> {
+  const { data, error } = await getSupabaseClient().rpc(
+    "start_freestyle_workout_session",
+  );
+
+  if (error) throw error;
+  if (!data) throw new Error("Freestyle workout session could not be started.");
   return getWorkoutSession(data);
 }
 

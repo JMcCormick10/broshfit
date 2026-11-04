@@ -88,20 +88,26 @@ function getTotalRepsByWeight(sets: WeightedSet[]): Map<number, number> {
   return totals;
 }
 
-function areAllSetsWithinRepRanges(sets: ProgressExerciseSet[]): boolean {
-  return (
-    sets.length > 0 &&
-    sets.every((set) => {
+function getRepRangeStatus(sets: ProgressExerciseSet[]): {
+  hasSuggestedRepRanges: boolean;
+  allSuggestedRepRangesMet: boolean;
+} {
+  const setsWithRanges = sets.flatMap((set) => {
+    const range = parseRepRange(set.targetReps);
+    return range === null ? [] : [{ set, range }];
+  });
+
+  return {
+    hasSuggestedRepRanges: setsWithRanges.length > 0,
+    allSuggestedRepRangesMet: setsWithRanges.every(({ set, range }) => {
       const reps = getUsableReps(set);
-      const range = parseRepRange(set.targetReps);
       return (
         reps !== null &&
-        range !== null &&
         reps >= range.min &&
         (range.max === null || reps <= range.max)
       );
-    })
-  );
+    }),
+  };
 }
 
 function formatWorkoutSetBreakdown(
@@ -180,13 +186,15 @@ function getWeightedAssessment(
       ];
     },
   );
-  const allCurrentSetsWithinRange = areAllSetsWithinRepRanges(current.sets);
+  const repRangeStatus = getRepRangeStatus(current.sets);
   const loadIncreased =
     currentHeaviestLoad !== null &&
     (previousHeaviestLoad === null ||
       currentHeaviestLoad > previousHeaviestLoad);
   const loadIncreaseCounts =
-    loadIncreased && allCurrentSetsWithinRange;
+    loadIncreased &&
+    (!repRangeStatus.hasSuggestedRepRanges ||
+      repRangeStatus.allSuggestedRepRangesMet);
   const oneRepMaxExplanation =
     oneRepMaxChange === null
       ? "Estimated 1RM could not be compared because one workout has no completed weighted sets."
@@ -204,7 +212,9 @@ function getWeightedAssessment(
     ...sameLoadIncreases,
     ...(loadIncreaseCounts
       ? [
-          `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad)} lb while all sets stayed within their suggested rep ranges.`,
+          repRangeStatus.hasSuggestedRepRanges
+            ? `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad)} lb while all sets with suggested rep ranges stayed within them.`
+            : `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad)} lb.`,
         ]
       : []),
   ];
@@ -220,9 +230,11 @@ function getWeightedAssessment(
           ]),
     ...(loadIncreased
       ? [
-          allCurrentSetsWithinRange
-            ? `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad!)} lb while all sets stayed within their suggested rep ranges.`
-            : `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad!)} lb, but not all sets stayed within their suggested rep ranges.`,
+          !repRangeStatus.hasSuggestedRepRanges
+            ? `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad!)} lb.`
+            : repRangeStatus.allSuggestedRepRangesMet
+              ? `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad!)} lb while all sets with suggested rep ranges stayed within them.`
+              : `Weight increased from ${previousHeaviestLoad === null ? "no added weight" : `${formatNumber(previousHeaviestLoad)} lb`} to ${formatNumber(currentHeaviestLoad!)} lb, but not all sets with suggested rep ranges stayed within them.`,
         ]
       : []),
   ];
@@ -360,16 +372,6 @@ export function assessWorkoutReportExercise(
   previous: ExerciseProgressEntry | null,
   history: ExerciseProgressEntry[],
 ): WorkoutReportExerciseAssessment {
-  if (current.sourceWorkoutExerciseId === null) {
-    return {
-      status: "not-scored",
-      isScorable: false,
-      explanations: [
-        "This exercise was added during the workout and is excluded from progress scoring.",
-      ],
-    };
-  }
-
   if (previous === null) {
     return {
       status: "steady",

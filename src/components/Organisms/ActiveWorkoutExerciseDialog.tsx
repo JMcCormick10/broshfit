@@ -110,6 +110,7 @@ export function ActiveWorkoutExerciseDialog({
               : null
           }
           exerciseId={exercise.exerciseId}
+          muscleGroups={exerciseHistory?.muscleGroups ?? []}
           profileName={profileName}
           previousSets={exerciseHistory?.sets ?? []}
           targetReps={exercise.sets.map((set) => set.targetReps)}

@@ -163,8 +163,8 @@ export function useActiveWorkoutSession(
   function addSet(exercise: WorkoutSessionExercise) {
     const setDescription =
       exercise.prescribedSetCount > 0
-        ? `This routine suggests ${exercise.prescribedSetCount} sets for ${exercise.exerciseName}. Add another set anyway?`
-        : `This routine does not specify a set count for ${exercise.exerciseName}. Add another set?`;
+        ? `This workout suggests ${exercise.prescribedSetCount} sets for ${exercise.exerciseName}. Add another set anyway?`
+        : `This workout does not specify a set count for ${exercise.exerciseName}. Add another set?`;
 
     requestConfirmation({
       title: "Add another set?",
@@ -248,6 +248,13 @@ export function useActiveWorkoutSession(
   }
 
   function endWorkout() {
+    if (session.routineId === null && completedExercises.length === 0) {
+      setError(
+        "Complete at least one exercise before saving a freestyle workout.",
+      );
+      return;
+    }
+
     const hasIncompleteExercises = pendingExercises.length > 0;
     if (hasIncompleteExercises) {
       requestConfirmation({

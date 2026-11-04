@@ -175,21 +175,21 @@ export type Database = {
       completed_workouts: {
         Row: {
           id: string;
-          workout_id: string;
+          workout_id: string | null;
           completed_by: string;
           completed_at: string;
           session_id: string | null;
         };
         Insert: {
           id?: string;
-          workout_id: string;
+          workout_id?: string | null;
           completed_by?: string;
           completed_at?: string;
           session_id?: string | null;
         };
         Update: {
           id?: string;
-          workout_id?: string;
+          workout_id?: string | null;
           completed_by?: string;
           completed_at?: string;
           session_id?: string | null;
@@ -199,7 +199,8 @@ export type Database = {
       workout_sessions: {
         Row: {
           id: string;
-          workout_id: string;
+          workout_id: string | null;
+          workout_name: string | null;
           performed_by: string;
           status: "in_progress" | "completed";
           started_at: string;
@@ -207,7 +208,8 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          workout_id: string;
+          workout_id?: string | null;
+          workout_name?: string | null;
           performed_by?: string;
           status?: "in_progress" | "completed";
           started_at?: string;
@@ -215,7 +217,8 @@ export type Database = {
         };
         Update: {
           id?: string;
-          workout_id?: string;
+          workout_id?: string | null;
+          workout_name?: string | null;
           performed_by?: string;
           status?: "in_progress" | "completed";
           started_at?: string;
@@ -228,6 +231,7 @@ export type Database = {
           id: string;
           session_id: string;
           source_workout_exercise_id: string | null;
+          was_routine_exercise: boolean;
           exercise_id: string;
           routine_position: number;
           prescribed_set_count: number;
@@ -239,6 +243,7 @@ export type Database = {
           id?: string;
           session_id: string;
           source_workout_exercise_id?: string | null;
+          was_routine_exercise?: boolean;
           exercise_id: string;
           routine_position: number;
           prescribed_set_count?: number;
@@ -250,6 +255,7 @@ export type Database = {
           id?: string;
           session_id?: string;
           source_workout_exercise_id?: string | null;
+          was_routine_exercise?: boolean;
           exercise_id?: string;
           routine_position?: number;
           prescribed_set_count?: number;
@@ -343,6 +349,10 @@ export type Database = {
         Args: {
           target_workout_id: string;
         };
+        Returns: string;
+      };
+      start_freestyle_workout_session: {
+        Args: Record<PropertyKey, never>;
         Returns: string;
       };
       save_workout_session_exercise: {

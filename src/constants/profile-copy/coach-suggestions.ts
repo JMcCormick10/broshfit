@@ -19,7 +19,17 @@ type WeightedCoachSet = CompletedCoachSet & {
   weight: number;
 };
 
-const HEAVIEST_LOAD_INCREMENT_LB = 5;
+const DEFAULT_LOAD_INCREMENT_LB = 5;
+const LOWER_BODY_LOAD_INCREMENT_LB = 10;
+const LOWER_BODY_MUSCLE_GROUPS = new Set(["quads", "glutes", "hamstrings"]);
+
+function getLoadIncrement(muscleGroups: readonly string[]): number {
+  return muscleGroups.some((muscleGroup) =>
+    LOWER_BODY_MUSCLE_GROUPS.has(muscleGroup.trim().toLowerCase()),
+  )
+    ? LOWER_BODY_LOAD_INCREMENT_LB
+    : DEFAULT_LOAD_INCREMENT_LB;
+}
 
 export function getRandomCoachOpening(profileName: string): string {
   const character = getCharacterForProfileName(profileName);
@@ -139,6 +149,7 @@ function formatNumber(value: number): string {
 function getEstimatedOneRepMaxTarget(
   bestSet: WeightedCoachSet,
   range: RepRange | null,
+  loadIncrement: number,
 ): { weight: number; reps: number } {
   const targetReps =
     range?.max === null
@@ -157,12 +168,10 @@ function getEstimatedOneRepMaxTarget(
   const weightForImprovement = previousEstimate / (1 + targetReps / 30);
   const increments = Math.max(
     1,
-    Math.floor(
-      (weightForImprovement - bestSet.weight) / HEAVIEST_LOAD_INCREMENT_LB,
-    ) + 1,
+    Math.floor((weightForImprovement - bestSet.weight) / loadIncrement) + 1,
   );
   return {
-    weight: bestSet.weight + increments * HEAVIEST_LOAD_INCREMENT_LB,
+    weight: bestSet.weight + increments * loadIncrement,
     reps: targetReps,
   };
 }
@@ -236,6 +245,7 @@ export function getCoachSuggestions(
   previousSets: CoachSet[],
   targetReps: (string | null)[],
   opening = getRandomCoachOpening(profileName),
+  muscleGroups: readonly string[] = [],
 ) {
   const completedSets = previousSets.filter(
     (set): set is CompletedCoachSet =>
@@ -251,6 +261,7 @@ export function getCoachSuggestions(
       suggestions: getBodyweightSuggestions(completedSets, targetReps),
     };
   }
+  const loadIncrement = getLoadIncrement(muscleGroups);
 
   // Epley's formula ranks the prior sets; targets stay inside the planned rep
   // range and use load increases when there is no room to add another rep.
@@ -274,6 +285,7 @@ export function getCoachSuggestions(
       : getEstimatedOneRepMaxTarget(
           bestEstimatedSet,
           getRepRangeForSet(targetReps, bestEstimatedSet.setNumber),
+          loadIncrement,
         );
   const repProgressionTarget = getRepProgressionTarget(
     weightedSets,
@@ -291,7 +303,7 @@ export function getCoachSuggestions(
     heaviestSet === null
       ? null
       : {
-          weight: heaviestSet.weight + HEAVIEST_LOAD_INCREMENT_LB,
+          weight: heaviestSet.weight + loadIncrement,
           reps: heaviestLoadRange?.min ?? heaviestSet.actualReps,
         };
   const allSetsAtRepRangeLimit = completedAllSetsAtRepRangeLimit(

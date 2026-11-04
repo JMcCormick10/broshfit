@@ -98,7 +98,10 @@ export function ActiveWorkoutDashboard({
           </Button>
           <Button
             variant="primary"
-            disabled={isSaving}
+            disabled={
+              isSaving ||
+              (session.routineId === null && completedExercises.length === 0)
+            }
             onClick={() => void endWorkout()}
             type="button"
           >
@@ -113,6 +116,12 @@ export function ActiveWorkoutDashboard({
           role="alert"
         >
           {error}
+        </p>
+      )}
+
+      {session.routineId === null && completedExercises.length === 0 && (
+        <p className="mt-5 text-sm text-muted-steel">
+          Complete at least one exercise before saving this freestyle workout.
         </p>
       )}
 
@@ -139,7 +148,9 @@ export function ActiveWorkoutDashboard({
           </div>
           {pendingExercises.length === 0 ? (
             <p className="border-y border-border py-4 text-sm text-muted-steel">
-              All exercises completed.
+              {session.routineId === null && session.exercises.length === 0
+                ? "No exercises added yet. Add an exercise to begin."
+                : "All exercises completed."}
             </p>
           ) : (
             <ol className="divide-y divide-border border-y border-border">

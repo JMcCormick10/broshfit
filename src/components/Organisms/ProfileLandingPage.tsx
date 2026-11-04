@@ -9,6 +9,7 @@ import { WorkoutRoutinesDashboard } from "./WorkoutRoutinesDashboard";
 import {
   getActiveWorkoutSession,
   getCompletedWorkoutHistory,
+  startFreestyleWorkoutSession,
   startWorkoutSession,
   type CompletedWorkoutSummary,
   type WorkoutSession,
@@ -223,6 +224,18 @@ export function ProfileLandingPage({
 
   async function handleStartWorkout(routineId: string) {
     const session = await startWorkoutSession(routineId);
+    setActiveWorkoutSession(session);
+    setIsRoutinePickerOpen(false);
+    setActiveWorkoutError(null);
+    setExerciseNotice({
+      type: "workout",
+      action: "started",
+      name: session.routineName,
+    });
+  }
+
+  async function handleStartFreestyleWorkout() {
+    const session = await startFreestyleWorkoutSession();
     setActiveWorkoutSession(session);
     setIsRoutinePickerOpen(false);
     setActiveWorkoutError(null);
@@ -629,6 +642,7 @@ export function ProfileLandingPage({
       {isRoutinePickerOpen && (
         <WorkoutRoutinePickerDialog
           onClose={() => setIsRoutinePickerOpen(false)}
+          onStartFreestyle={handleStartFreestyleWorkout}
           onStart={handleStartWorkout}
         />
       )}
