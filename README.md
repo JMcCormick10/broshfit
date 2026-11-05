@@ -1,6 +1,6 @@
-# Broshfit
+# Zenkai Boost
 
-Broshfit is a strength-training log built with React, TypeScript, Vite, Tailwind CSS, and Supabase. Its visual identity uses an original training emblem and high-energy orange/blue palette.
+Zenkai Boost is a strength-training log built with React, TypeScript, Vite, Tailwind CSS, and Supabase. Its visual identity uses the Zenkai Boost training artwork and a high-energy orange/blue palette.
 
 ## Run locally
 
@@ -10,7 +10,7 @@ Use `getSupabaseClient()` from `src/lib/supabase.ts` to access Supabase. These `
 
 ### Password-only profile sign-in
 
-Each profile signs in with the Auth email `profile-<profile-id>@broshfit.invalid`, where `<profile-id>` is the profile UUID. Provision a confirmed Supabase Auth user with that exact email and the desired password for each profile. The `.invalid` domain cannot receive email, so email confirmation and password-reset email flows are unavailable for these accounts.
+Each profile signs in with the Auth email `profile-<profile-id>@broshfit.invalid`, where `<profile-id>` is the profile UUID. This existing sign-in namespace is retained for compatibility with provisioned accounts. Provision a confirmed Supabase Auth user with that exact email and the desired password for each profile. The `.invalid` domain cannot receive email, so email confirmation and password-reset email flows are unavailable for these accounts.
 
 ### Copy completed workout history to Ginyu
 
@@ -42,6 +42,6 @@ The `.env*` files are ignored by Git except `.env.example`; do not commit local 
 
 ## PWA
 
-Production builds generate a manifest and service worker. The PWA uses icons derived from `public/new-logo.png`; install it from the browser's install option (or **Add to Home Screen** on iOS). When a new version is detected, Broshfit shows an update prompt; choose **Update now** to reload the app. Keep the installed PWA—there is no need to uninstall and add it again. The service worker caches the app shell and build assets; Supabase data operations still require a network connection.
+Production builds generate a manifest and service worker. The PWA uses icons derived from `public/zenkai-boost-logo.png`; install it from the browser's install option (or **Add to Home Screen** on iOS). When a new version is detected, Zenkai Boost shows an update prompt; choose **Update now** to reload the app. Keep the installed PWA—there is no need to uninstall and add it again. The service worker caches the app shell and build assets; Supabase data operations still require a network connection.
 
 Run `npm run build` and `npm run preview` to test the production PWA locally. Service workers require HTTPS except on localhost.

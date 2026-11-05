@@ -14,9 +14,9 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       manifest: {
-        name: "Broshfit",
-        short_name: "Broshfit",
-        description: "Your personal fitness space.",
+        name: "Zenkai Boost",
+        short_name: "Zenkai Boost",
+        description: "Your personal strength-training space.",
         theme_color: "#0b1016",
         background_color: "#0b1016",
         display: "standalone",

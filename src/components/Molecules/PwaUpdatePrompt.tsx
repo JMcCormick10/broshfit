@@ -38,7 +38,7 @@ export function PwaUpdatePrompt() {
         <div>
           <h2 className="font-heading text-lg font-bold">Update available</h2>
           <p className="mt-1 text-sm text-muted-steel" role="status" aria-live="polite">
-            A new version of Broshfit is ready. Update now to reload the app.
+            A new version of Zenkai Boost is ready. Update now to reload the app.
           </p>
           {updateError && (
             <p className="mt-2 text-sm text-danger" role="alert">

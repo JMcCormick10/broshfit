@@ -38,8 +38,8 @@ export function LandingPage({
             className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,159,28,0.12),transparent_68%)]"
           />
           <img
-            src={`${import.meta.env.BASE_URL}new-logo.png`}
-            alt="Broshfit strength-training emblem"
+            src={`${import.meta.env.BASE_URL}zenkai-boost-logo.png`}
+            alt="Zenkai Boost training logo"
             className="relative z-10 max-h-[15rem] w-full object-contain px-3 py-1 sm:max-h-[17rem] md:max-h-[590px] md:p-5"
           />
           <div
@@ -58,7 +58,7 @@ export function LandingPage({
         <div className="flex min-h-[620px] flex-col justify-center px-6 py-10 sm:px-10 sm:py-12">
           <header className="mb-9 flex items-center justify-between">
             <span className="font-heading text-lg font-bold tracking-[0.18em]">
-              BROSHFIT
+              ZENKAI BOOST
             </span>
             <span className="font-mono text-[9px] tracking-[0.14em] text-muted-steel sm:text-[10px]">
               TRAINING LOG <span className="text-secondary">// 01 + 02</span>

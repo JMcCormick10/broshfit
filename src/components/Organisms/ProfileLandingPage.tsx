@@ -292,7 +292,7 @@ export function ProfileLandingPage({
             aria-label="Go to dashboard"
             className="font-heading text-lg font-bold tracking-[0.18em] transition hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
-            BROSHFIT
+            ZENKAI BOOST
           </button>
           <div className="flex items-center gap-3 sm:gap-5">
             <div className="flex items-center gap-2.5">
