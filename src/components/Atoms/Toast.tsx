@@ -2,23 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getProfileNotificationMessage, type ProfileNotification } from "../../constants/profile-copy/notifications";
 import { CharacterChat } from "../Molecules/CharacterChat";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 type ToastProps = {
   durationMs?: number;
   notification: ProfileNotification;
   onDismiss: () => void;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
 };
 
 export function Toast({
   durationMs = 4000,
   notification,
   onDismiss,
-  profileName,
+  profileCharacter,
 }: ToastProps) {
   const [isVisible, setIsVisible] = useState(false);
   const dismissRef = useRef(onDismiss);
-  const message = getProfileNotificationMessage(profileName, notification);
+  const message = getProfileNotificationMessage(
+    profileCharacter,
+    notification,
+  );
 
   useEffect(() => {
     dismissRef.current = onDismiss;
@@ -53,7 +57,7 @@ export function Toast({
         ariaLabel="Character notification"
         label="Training update"
         message={message}
-        profileName={profileName}
+        profileCharacter={profileCharacter}
       />
     </div>,
     document.body,

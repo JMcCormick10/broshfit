@@ -1,7 +1,6 @@
 import {
   characterProfileText,
   exerciseHistoryVoices,
-  getCharacterForProfileName,
   workoutReportMessages,
   type WorkoutReportCategory,
 } from "./profile-copy/character-copy";
@@ -60,8 +59,9 @@ function getCharacterMessage(
   return getProgressMessage(character, progress, variant);
 }
 
-export function getProfileCopy(profileName: string): ProfileCopy {
-  const character = getCharacterForProfileName(profileName);
+export function getProfileCopy(
+  character: ProgressCharacter | null,
+): ProfileCopy {
   if (!character) return defaultProfileCopy;
 
   return {
@@ -74,10 +74,9 @@ export function getProfileCopy(profileName: string): ProfileCopy {
 }
 
 export function getExerciseHistoryContextMessage(
-  profileName: string,
+  character: ProgressCharacter | null,
   contextSentences: string[],
 ): string {
-  const character = getCharacterForProfileName(profileName);
   const voice = character ? exerciseHistoryVoices[character] : null;
   const opening = voice?.opening ?? "Here's a quick look at your last session:";
   const context = contextSentences.join(" ");
@@ -88,11 +87,10 @@ export function getExerciseHistoryContextMessage(
 }
 
 export function getWorkoutReportMessage(
-  profileName: string,
+  character: ProgressCharacter | null,
   category: WorkoutReportCategory,
   workoutId: string,
 ): string {
-  const character = getCharacterForProfileName(profileName);
   if (!character) {
     return "Your workout is logged. Keep showing up, and your progress will build over time.";
   }

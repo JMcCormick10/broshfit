@@ -10,12 +10,13 @@ import { useActiveWorkoutSession } from "../../hooks/useActiveWorkoutSession";
 import { SessionExercisePickerDialog } from "./SessionExercisePickerDialog";
 import { useExerciseHistory } from "../../hooks/useExerciseHistory";
 import { ActiveWorkoutExerciseDialog } from "./ActiveWorkoutExerciseDialog";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 type ActiveWorkoutDashboardProps = {
   onDiscard: () => void;
   onFinish: (session: WorkoutSession) => void;
   onSessionChange: (session: WorkoutSession) => void;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
   motivationQuote: string;
   session: WorkoutSession;
 };
@@ -24,7 +25,7 @@ export function ActiveWorkoutDashboard({
   onDiscard,
   onFinish,
   onSessionChange,
-  profileName,
+  profileCharacter,
   motivationQuote,
   session,
 }: ActiveWorkoutDashboardProps) {
@@ -127,7 +128,10 @@ export function ActiveWorkoutDashboard({
 
       <div className="mt-6 max-w-3xl">
         <div className="mb-6">
-          <CharacterChat profileName={profileName} message={motivationQuote} />
+          <CharacterChat
+            profileCharacter={profileCharacter}
+            message={motivationQuote}
+          />
         </div>
         <section aria-labelledby="remaining-exercises-heading">
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -273,7 +277,7 @@ export function ActiveWorkoutDashboard({
           onClose={() => setSelectedExerciseId(null)}
           onCompleteExercise={completeExercise}
           onSaveProgress={saveProgress}
-          profileName={profileName}
+          profileCharacter={profileCharacter}
           saveError={error}
           updateExercise={updateExercise}
         />
@@ -307,7 +311,7 @@ export function ActiveWorkoutDashboard({
         <Toast
           notification={notice}
           onDismiss={() => setNotice(null)}
-          profileName={profileName}
+          profileCharacter={profileCharacter}
         />
       )}
 

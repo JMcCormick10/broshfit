@@ -20,8 +20,8 @@ export function ProfileCard({
   onSelect,
   profile,
 }: ProfileCardProps) {
-  const avatarUrl = getProfileAvatarUrl(profile.name);
-  const profileCopy = getProfileCopy(profile.name);
+  const avatarUrl = getProfileAvatarUrl(profile.character);
+  const profileCopy = getProfileCopy(profile.character);
 
   return (
     <Button

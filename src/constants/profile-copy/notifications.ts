@@ -1,4 +1,7 @@
-import { getCharacterForProfileName, notificationVoices } from "./character-copy";
+import {
+  notificationVoices,
+  type ProgressCharacter,
+} from "./character-copy";
 
 export type ProfileNotification =
   | { type: "exercise-library"; action: "added" | "updated"; name: string }
@@ -76,10 +79,9 @@ function getNotificationDetail(notification: ProfileNotification): string {
 }
 
 export function getProfileNotificationMessage(
-  profileName: string,
+  character: ProgressCharacter | null,
   notification: ProfileNotification,
 ): string {
-  const character = getCharacterForProfileName(profileName);
   const voice =
     (character ? notificationVoices[character] : null) ?? {
       opening: "Well done.",

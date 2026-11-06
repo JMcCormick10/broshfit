@@ -77,6 +77,19 @@
   --particle-glow: #e8c7ff;
 }
 
+/* Piccolo — Namekian green, deep purple, and warm gold */
+:root[data-theme="piccolo"] {
+  --primary: #4f9b66;
+  --secondary: #763ba8;
+  --accent: #e5bf56;
+
+  --gradient-power: linear-gradient(135deg, #4f9b66, #e5bf56);
+  --gradient-energy: linear-gradient(90deg, #4f9b66, #763ba8);
+
+  --particle-color: #4f9b66;
+  --particle-glow: #d8ef7a;
+}
+
 /* =========================================
    FLOATING ENERGY PARTICLE ANIMATION
    ========================================= */

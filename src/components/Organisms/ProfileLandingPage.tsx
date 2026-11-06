@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import type { Profile } from "../../lib/database.types";
+import { useEffect, useRef, useState } from "react";
+import type { Profile, ProfileCharacter } from "../../lib/database.types";
 import { Button } from "../Atoms/Button";
 import { ExerciseLibrary } from "./ExerciseLibrary";
 import type { ExerciseRecord } from "../../lib/exercises";
@@ -26,6 +26,7 @@ import { Toast } from "../Atoms/Toast";
 import { getProfileAvatarUrl } from "../../lib/profile-avatar";
 import { getProfileTheme } from "../../lib/profile-theme";
 import { getProfileCopy } from "../../constants/profile-copy";
+import { updateProfileCharacter } from "../../lib/profiles";
 import type { ProfileNotification } from "../../constants/profile-copy/notifications";
 import { ExerciseProgressPage } from "./ExerciseProgressPage";
 
@@ -33,8 +34,16 @@ type ProfileLandingPageProps = {
   isSigningOut: boolean;
   logoutError: string | null;
   onLogout: () => void;
+  onProfileChange: (profile: Profile) => void;
   profile: Profile;
 };
+
+const characterOptions: { value: ProfileCharacter; label: string }[] = [
+  { value: "goku", label: "Goku" },
+  { value: "vegeta", label: "Vegeta" },
+  { value: "ginyu", label: "Ginyu" },
+  { value: "piccolo", label: "Piccolo" },
+];
 
 type WorkoutReportReturn = {
   sourceView: "dashboard" | "workout-history";
@@ -45,6 +54,7 @@ export function ProfileLandingPage({
   isSigningOut,
   logoutError,
   onLogout,
+  onProfileChange,
   profile,
 }: ProfileLandingPageProps) {
   const [activeView, setActiveView] = useState<
@@ -53,10 +63,15 @@ export function ProfileLandingPage({
   const [initialProgressExerciseId, setInitialProgressExerciseId] = useState<
     string | null
   >(null);
-  const profileAvatarUrl = getProfileAvatarUrl(profile.name);
-  const profileTheme = getProfileTheme(profile.name);
-  const profileCopy = getProfileCopy(profile.name);
+  const profileAvatarUrl = getProfileAvatarUrl(profile.character);
+  const profileTheme = getProfileTheme(profile.character);
+  const profileCopy = getProfileCopy(profile.character);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCharacterMenuOpen, setIsCharacterMenuOpen] = useState(false);
+  const [isSavingCharacter, setIsSavingCharacter] = useState(false);
+  const [characterError, setCharacterError] = useState<string | null>(null);
+  const characterMenuRef = useRef<HTMLDivElement>(null);
+  const characterMenuButtonRef = useRef<HTMLButtonElement>(null);
   const [isExerciseDialogOpen, setIsExerciseDialogOpen] = useState(false);
   const [isWorkoutDialogOpen, setIsWorkoutDialogOpen] = useState(false);
   const [isRoutinePickerOpen, setIsRoutinePickerOpen] = useState(false);
@@ -125,6 +140,55 @@ export function ProfileLandingPage({
       setWorkoutReportReturn(null);
     }
   }
+
+  async function handleCharacterChange(character: ProfileCharacter) {
+    if (character === profile.character) {
+      setIsCharacterMenuOpen(false);
+      return;
+    }
+
+    setIsSavingCharacter(true);
+    setCharacterError(null);
+    try {
+      const updatedProfile = await updateProfileCharacter(profile.id, character);
+      onProfileChange(updatedProfile);
+      setIsCharacterMenuOpen(false);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "An unknown error occurred.";
+      setCharacterError(`Could not change character: ${message}`);
+    } finally {
+      setIsSavingCharacter(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!isCharacterMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !characterMenuRef.current?.contains(event.target)
+      ) {
+        setIsCharacterMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsCharacterMenuOpen(false);
+        characterMenuButtonRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCharacterMenuOpen]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -295,8 +359,20 @@ export function ProfileLandingPage({
             ZENKAI BOOST
           </button>
           <div className="flex items-center gap-3 sm:gap-5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-10 items-center justify-center overflow-hidden rounded-md border border-accent/50 bg-surface font-heading text-lg font-bold text-accent">
+            <div className="relative" ref={characterMenuRef}>
+              <button
+                ref={characterMenuButtonRef}
+                type="button"
+                aria-controls="character-selector"
+                aria-expanded={isCharacterMenuOpen}
+                aria-label={`Change character. Current character: ${characterOptions.find((option) => option.value === profile.character)?.label ?? profile.character}`}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setCharacterError(null);
+                  setIsCharacterMenuOpen((isOpen) => !isOpen);
+                }}
+                className="flex size-10 items-center justify-center overflow-hidden rounded-md border border-accent/50 bg-surface font-heading text-lg font-bold text-accent transition hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
                 {profileAvatarUrl ? (
                   <img
                     src={profileAvatarUrl}
@@ -306,15 +382,66 @@ export function ProfileLandingPage({
                 ) : (
                   profile.initial
                 )}
-              </span>
-              <span className="hidden sm:block">
-                <span className="block font-semibold leading-tight">
-                  {profile.name}
-                </span>
-                <span className="font-mono text-[9px] tracking-[0.12em] text-muted-steel">
-                  {profileCopy.label}
-                </span>
-              </span>
+              </button>
+              {isCharacterMenuOpen && (
+                <div
+                  aria-label="Choose character"
+                  className="absolute right-0 top-full z-50 mt-2 w-56 rounded-md border border-border bg-surface p-2 shadow-xl shadow-black/40"
+                  id="character-selector"
+                  role="group"
+                >
+                  <p className="px-2 pb-2 font-mono text-[10px] tracking-[0.14em] text-muted-steel uppercase">
+                    Choose character
+                  </p>
+                  <p className="px-2 pb-2 text-xs leading-relaxed text-muted-steel">
+                    Signed in as {profile.name}. Changing characters updates
+                    your avatar, copy, and theme only; your profile and workout
+                    history stay the same.
+                  </p>
+                  <div className="space-y-1">
+                    {characterOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={profile.character === option.value}
+                        disabled={isSavingCharacter}
+                        onClick={() => void handleCharacterChange(option.value)}
+                        className={`flex w-full items-center gap-3 rounded px-2 py-2 text-left text-sm transition hover:bg-void disabled:cursor-wait disabled:opacity-60 ${
+                          profile.character === option.value
+                            ? "text-primary"
+                            : "text-starlight"
+                        }`}
+                      >
+                        <img
+                          src={
+                            getProfileAvatarUrl(option.value) ??
+                            `${import.meta.env.BASE_URL}profile-avatars/${option.value}.svg`
+                          }
+                          alt=""
+                          className="size-8 rounded-full object-cover"
+                        />
+                        <span className="flex-1">{option.label}</span>
+                        {profile.character === option.value && (
+                          <span aria-hidden="true">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {isSavingCharacter && (
+                    <p className="px-2 pt-2 text-xs text-muted-steel" role="status">
+                      Saving character...
+                    </p>
+                  )}
+                  {characterError && (
+                    <p
+                      className="mt-2 rounded border border-danger/40 px-2 py-1.5 text-xs text-danger"
+                      role="alert"
+                    >
+                      {characterError}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="relative">
               <Button
@@ -324,7 +451,10 @@ export function ProfileLandingPage({
                 aria-label={
                   isMenuOpen ? "Close navigation menu" : "Open navigation menu"
                 }
-                onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+                onClick={() => {
+                  setIsCharacterMenuOpen(false);
+                  setIsMenuOpen((isOpen) => !isOpen);
+                }}
                 type="button"
               >
                 <span aria-hidden="true" className="h-0.5 w-4 bg-starlight" />
@@ -459,7 +589,7 @@ export function ProfileLandingPage({
               }}
               onFinish={handleWorkoutSessionFinished}
               onSessionChange={handleWorkoutSessionChange}
-              profileName={profile.name}
+              profileCharacter={profile.character}
               motivationQuote={profileCopy.workoutMotivation(activeWorkoutSession.id)}
               session={activeWorkoutSession}
             />
@@ -612,7 +742,7 @@ export function ProfileLandingPage({
             }
             onReportClosed={() => setWorkoutReportReturn(null)}
             onViewLongTermTrends={openLongTermTrends}
-            profileName={profile.name}
+            profileCharacter={profile.character}
           />
         ) : (
           <ExerciseProgressPage
@@ -621,7 +751,7 @@ export function ProfileLandingPage({
               workoutReportReturn ? handleBackToWorkoutReport : undefined
             }
             profileCopy={profileCopy}
-            profileName={profile.name}
+            profileCharacter={profile.character}
           />
         )}
       </div>
@@ -656,7 +786,7 @@ export function ProfileLandingPage({
           }}
           onEditWorkout={() => setIsEditingCompletedWorkout(true)}
           onViewLongTermTrends={openLongTermTrends}
-          profileName={profile.name}
+          profileCharacter={profile.character}
           workout={completedWorkoutToReport}
         />
       )}
@@ -684,7 +814,7 @@ export function ProfileLandingPage({
         <Toast
           notification={exerciseNotice}
           onDismiss={() => setExerciseNotice(null)}
-          profileName={profile.name}
+          profileCharacter={profile.character}
         />
       )}
     </main>

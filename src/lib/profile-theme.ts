@@ -1,11 +1,9 @@
-export type ProfileTheme = "goku" | "vegeta" | "ginyu";
+import type { ProfileCharacter } from "./database.types";
 
-const profileThemes: Record<string, ProfileTheme> = {
-  josh: "goku",
-  brad: "vegeta",
-  test: "ginyu",
-};
+export type ProfileTheme = ProfileCharacter;
 
-export function getProfileTheme(profileName: string): ProfileTheme | null {
-  return profileThemes[profileName.trim().toLowerCase()] ?? null;
+export function getProfileTheme(
+  character: ProfileCharacter | null,
+): ProfileTheme | null {
+  return character;
 }

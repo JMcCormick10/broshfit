@@ -19,6 +19,7 @@ import {
   type WorkoutSession,
   type WorkoutSessionExercise,
 } from "../../lib/workouts";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 type WorkoutReportDialogProps = {
   onClose: () => void;
@@ -27,7 +28,7 @@ type WorkoutReportDialogProps = {
     exerciseId: string,
     workout: CompletedWorkoutSummary,
   ) => void;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
   workout: CompletedWorkoutSummary;
 };
 
@@ -84,7 +85,7 @@ export function WorkoutReportDialog({
   onClose,
   onEditWorkout,
   onViewLongTermTrends,
-  profileName,
+  profileCharacter,
   workout,
 }: WorkoutReportDialogProps) {
   const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(
@@ -143,7 +144,7 @@ export function WorkoutReportDialog({
     assessedExercises.map(({ assessment }) => assessment),
   );
   const characterMessage = report
-    ? getWorkoutReportMessage(profileName, category, workout.id)
+    ? getWorkoutReportMessage(profileCharacter, category, workout.id)
     : "Great work finishing your workout. Your progress recap is loading.";
 
   return (
@@ -166,7 +167,7 @@ export function WorkoutReportDialog({
       <CharacterChat
         label="Workout recap"
         message={characterMessage}
-        profileName={profileName}
+        profileCharacter={profileCharacter}
       />
 
       <section

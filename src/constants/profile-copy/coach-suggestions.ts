@@ -1,4 +1,7 @@
-import { coachOpenings, getCharacterForProfileName } from "./character-copy";
+import {
+  coachOpenings,
+  type ProgressCharacter,
+} from "./character-copy";
 
 type CoachSet = {
   setNumber: number;
@@ -31,8 +34,9 @@ function getLoadIncrement(muscleGroups: readonly string[]): number {
     : DEFAULT_LOAD_INCREMENT_LB;
 }
 
-export function getRandomCoachOpening(profileName: string): string {
-  const character = getCharacterForProfileName(profileName);
+export function getRandomCoachOpening(
+  character: ProgressCharacter | null,
+): string {
   const openings = character ? coachOpenings[character] : [];
   if (openings.length === 0) {
     return "Choose one target and make it count—here are some ways to progress.";
@@ -241,10 +245,10 @@ function getBodyweightSuggestions(
 }
 
 export function getCoachSuggestions(
-  profileName: string,
+  character: ProgressCharacter | null,
   previousSets: CoachSet[],
   targetReps: (string | null)[],
-  opening = getRandomCoachOpening(profileName),
+  opening = getRandomCoachOpening(character),
   muscleGroups: readonly string[] = [],
 ) {
   const completedSets = previousSets.filter(

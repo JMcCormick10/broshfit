@@ -12,6 +12,8 @@ Use `getSupabaseClient()` from `src/lib/supabase.ts` to access Supabase. These `
 
 Each profile signs in with the Auth email `profile-<profile-id>@broshfit.invalid`, where `<profile-id>` is the profile UUID. This existing sign-in namespace is retained for compatibility with provisioned accounts. Provision a confirmed Supabase Auth user with that exact email and the desired password for each profile. The `.invalid` domain cannot receive email, so email confirmation and password-reset email flows are unavailable for these accounts.
 
+The `profiles.character` field controls each profile's avatar, character-specific copy, and color theme. It is separate from profile identity and workout history. Initial assignments are Josh → Goku, Brad → Vegeta, and Test → Ginyu; a signed-in profile can change its character from the avatar menu. Apply [`supabase/migrations/20261105000000_add_profile_character.sql`](./supabase/migrations/20261105000000_add_profile_character.sql) and [`supabase/migrations/20261105000001_allow_profile_character_changes.sql`](./supabase/migrations/20261105000001_allow_profile_character_changes.sql) before deploying character selection.
+
 ### Copy completed workout history to Ginyu
 
 The `Test` profile is Ginyu's sandbox. Workout routines and exercises are shared globally, so the copy script reuses those IDs and copies only completed workout sessions, their exercise/set logs, and completion records.

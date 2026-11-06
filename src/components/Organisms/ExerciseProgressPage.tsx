@@ -16,6 +16,7 @@ import { ProgressSummaryCard } from "../Molecules/ProgressSummaryCard";
 import { ProgressMetricCard } from "../Molecules/ProgressMetricCard";
 import { ProgressSessionRow } from "../Molecules/ProgressSessionRow";
 import { ProgressFeedbackBreakdown } from "../Molecules/ProgressFeedbackBreakdown";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 const ranges: { value: ProgressRange; label: string }[] = [
   { value: "month", label: "1 month" },
@@ -42,14 +43,14 @@ type ExerciseProgressPageProps = {
   initialExerciseId?: string | null;
   onBackToReport?: () => void;
   profileCopy: ProfileCopy;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
 };
 
 export function ExerciseProgressPage({
   initialExerciseId,
   onBackToReport,
   profileCopy,
-  profileName,
+  profileCharacter,
 }: ExerciseProgressPageProps) {
   const progress = useExerciseProgress(undefined, initialExerciseId);
   const insights = useExerciseProgressInsights(progress);
@@ -87,7 +88,7 @@ export function ExerciseProgressPage({
           insights={insights}
           onBackToReport={onBackToReport}
           profileCopy={profileCopy}
-          profileName={profileName}
+          profileCharacter={profileCharacter}
         />
       ) : (
         <>
@@ -121,7 +122,7 @@ export function ExerciseProgressPage({
               </div>
             </div>
             <CharacterChat
-              profileName={profileName}
+              profileCharacter={profileCharacter}
               message={profileCopy.progressMessage(
                 insights.overallTrend,
                 insights.overviewVariant,
@@ -271,7 +272,7 @@ function ExerciseDetail({
   insights,
   onBackToReport,
   profileCopy,
-  profileName,
+  profileCharacter,
 }: {
   selected: NonNullable<
     ReturnType<typeof useExerciseProgress>["selectedExercise"]
@@ -280,7 +281,7 @@ function ExerciseDetail({
   insights: ReturnType<typeof useExerciseProgressInsights>;
   onBackToReport?: () => void;
   profileCopy: ProfileCopy;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
 }) {
   return (
     <section className="space-y-6">
@@ -313,7 +314,7 @@ function ExerciseDetail({
         </header>
       </div>
       <CharacterChat
-        profileName={profileName}
+        profileCharacter={profileCharacter}
         message={profileCopy.progressMessage(
           insights.trend,
           insights.detailVariant,

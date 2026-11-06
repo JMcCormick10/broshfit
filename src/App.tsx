@@ -80,6 +80,15 @@ function App() {
     }
   }
 
+  function handleProfileChange(updatedProfile: Profile) {
+    setAuthenticatedProfile(updatedProfile);
+    setProfiles((currentProfiles) =>
+      currentProfiles.map((profile) =>
+        profile.id === updatedProfile.id ? updatedProfile : profile,
+      ),
+    );
+  }
+
   useEffect(() => {
     let isMounted = true;
 
@@ -138,6 +147,7 @@ function App() {
         isSigningOut={isSigningOut}
         logoutError={logoutError}
         onLogout={handleLogout}
+        onProfileChange={handleProfileChange}
         profile={authenticatedProfile}
       />
     );

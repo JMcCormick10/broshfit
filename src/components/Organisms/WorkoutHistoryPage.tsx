@@ -10,12 +10,13 @@ import {
 } from "../../lib/workouts";
 import { useAsyncData } from "../../hooks/useAsyncData";
 import type { ProfileNotification } from "../../constants/profile-copy/notifications";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 export function WorkoutHistoryPage({
   initialSelectedWorkout = null,
   onReportClosed,
   onViewLongTermTrends,
-  profileName,
+  profileCharacter,
 }: {
   initialSelectedWorkout?: CompletedWorkoutSummary | null;
   onReportClosed: () => void;
@@ -23,7 +24,7 @@ export function WorkoutHistoryPage({
     exerciseId: string,
     workout: CompletedWorkoutSummary,
   ) => void;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
 }) {
   const [selectedWorkout, setSelectedWorkout] =
     useState<CompletedWorkoutSummary | null>(initialSelectedWorkout);
@@ -105,7 +106,7 @@ export function WorkoutHistoryPage({
           }}
           onEditWorkout={() => setIsEditingSelectedWorkout(true)}
           onViewLongTermTrends={onViewLongTermTrends}
-          profileName={profileName}
+          profileCharacter={profileCharacter}
           workout={selectedWorkout}
         />
       )}
@@ -131,7 +132,7 @@ export function WorkoutHistoryPage({
         <Toast
           notification={notice}
           onDismiss={() => setNotice(null)}
-          profileName={profileName}
+          profileCharacter={profileCharacter}
         />
       )}
     </section>

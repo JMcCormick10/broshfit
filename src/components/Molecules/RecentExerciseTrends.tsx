@@ -4,6 +4,7 @@ import { useExerciseProgressInsights } from "../../hooks/useExerciseProgressInsi
 import type { ProgressRange } from "../../hooks/useExerciseProgress";
 import { Spinner } from "../Atoms/Spinner";
 import { CharacterChat } from "./CharacterChat";
+import type { ProfileCharacter } from "../../lib/database.types";
 import { ProgressChangeBadge } from "./ProgressChangeBadge";
 
 const ranges: { value: ProgressRange; label: string }[] = [
@@ -16,10 +17,10 @@ const ranges: { value: ProgressRange; label: string }[] = [
 
 export function RecentExerciseTrends({
   exerciseId,
-  profileName,
+  profileCharacter,
 }: {
   exerciseId: string;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
 }) {
   const progress = useExerciseProgress(exerciseId);
   const exercise = progress.exercises.find((item) => item.id === exerciseId);
@@ -29,7 +30,7 @@ export function RecentExerciseTrends({
     range: progress.range,
     selectedExerciseId: exerciseId,
   });
-  const profileCopy = getProfileCopy(profileName);
+  const profileCopy = getProfileCopy(profileCharacter);
 
   return (
     <section
@@ -72,7 +73,7 @@ export function RecentExerciseTrends({
       ) : (
         <>
           <CharacterChat
-            profileName={profileName}
+            profileCharacter={profileCharacter}
             message={profileCopy.progressMessage(
               insights.trend,
               insights.detailVariant,

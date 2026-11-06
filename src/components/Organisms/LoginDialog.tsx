@@ -25,7 +25,7 @@ export function LoginDialog({
   password,
   profile,
 }: LoginDialogProps) {
-  const profileCopy = getProfileCopy(profile.name);
+  const profileCopy = getProfileCopy(profile.character);
 
   return (
     <DialogShell

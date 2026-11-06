@@ -11,6 +11,7 @@ import { WeightInput } from "../Atoms/WeightInput";
 import { DialogShell } from "../Molecules/DialogShell";
 import { ExerciseHistoryActions } from "../Molecules/ExerciseHistoryActions";
 import { FormField } from "../Molecules/FormField";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 type ActiveWorkoutExerciseDialogProps = {
   exercise: WorkoutSessionExercise;
@@ -22,7 +23,7 @@ type ActiveWorkoutExerciseDialogProps = {
   onClose: () => void;
   onCompleteExercise: (exercise: WorkoutSessionExercise) => void;
   onSaveProgress: (exercise: WorkoutSessionExercise) => Promise<void>;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
   saveError: string | null;
   updateExercise: (
     exerciseId: string,
@@ -40,7 +41,7 @@ export function ActiveWorkoutExerciseDialog({
   onClose,
   onCompleteExercise,
   onSaveProgress,
-  profileName,
+  profileCharacter,
   saveError,
   updateExercise,
 }: ActiveWorkoutExerciseDialogProps) {
@@ -104,14 +105,14 @@ export function ActiveWorkoutExerciseDialog({
           contextMessage={
             exerciseHistory
               ? getExerciseHistoryContextMessage(
-                  profileName,
+                  profileCharacter,
                   exerciseHistory.contextSentences,
                 )
               : null
           }
           exerciseId={exercise.exerciseId}
           muscleGroups={exerciseHistory?.muscleGroups ?? []}
-          profileName={profileName}
+          profileCharacter={profileCharacter}
           previousSets={exerciseHistory?.sets ?? []}
           targetReps={exercise.sets.map((set) => set.targetReps)}
         />

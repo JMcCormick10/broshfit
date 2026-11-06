@@ -8,6 +8,8 @@ export type ExerciseEquipment =
   | "Resistance Band"
   | "Other";
 
+export type ProfileCharacter = "goku" | "vegeta" | "ginyu" | "piccolo";
+
 export type Json =
   | string
   | number
@@ -28,6 +30,7 @@ export type Database = {
           initial: string;
           accent: "orange" | "blue" | "muted";
           avatar_url: string | null;
+          character: ProfileCharacter;
           sort_order: number;
           created_at: string;
         };
@@ -39,6 +42,7 @@ export type Database = {
           initial: string;
           accent: "orange" | "blue" | "muted";
           avatar_url?: string | null;
+          character?: ProfileCharacter;
           sort_order: number;
           created_at?: string;
         };
@@ -50,6 +54,7 @@ export type Database = {
           initial?: string;
           accent?: "orange" | "blue" | "muted";
           avatar_url?: string | null;
+          character?: ProfileCharacter;
           sort_order?: number;
           created_at?: string;
         };
@@ -421,5 +426,12 @@ export type Database = {
 
 export type Profile = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
-  "id" | "name" | "label" | "detail" | "initial" | "accent" | "avatar_url"
+  | "id"
+  | "name"
+  | "label"
+  | "detail"
+  | "initial"
+  | "accent"
+  | "avatar_url"
+  | "character"
 >;

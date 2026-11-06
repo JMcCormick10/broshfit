@@ -1,19 +1,20 @@
 import { getProfileAvatarUrl } from "../../lib/profile-avatar";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 type CharacterChatProps = {
   ariaLabel?: string;
   label?: string;
   message: string;
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
 };
 
 export function CharacterChat({
   ariaLabel = "Character progress message",
   label = "Training partner",
-  profileName,
+  profileCharacter,
   message,
 }: CharacterChatProps) {
-  const avatarUrl = getProfileAvatarUrl(profileName);
+  const avatarUrl = getProfileAvatarUrl(profileCharacter);
   return (
     <aside
       aria-label={ariaLabel}
@@ -23,7 +24,7 @@ export function CharacterChat({
         {avatarUrl ? (
           <img
             src={avatarUrl}
-            alt={profileName}
+            alt={profileCharacter ?? "Training character"}
             className="size-full object-cover"
           />
         ) : (
@@ -31,7 +32,7 @@ export function CharacterChat({
             aria-hidden="true"
             className="font-heading text-2xl font-bold text-primary"
           >
-            {profileName.charAt(0).toUpperCase()}
+            {profileCharacter?.charAt(0).toUpperCase() ?? "?"}
           </span>
         )}
       </div>

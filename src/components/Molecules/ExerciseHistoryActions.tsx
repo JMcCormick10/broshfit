@@ -7,13 +7,14 @@ import type { ExerciseHistorySet } from "../../lib/workouts";
 import { CharacterChat } from "./CharacterChat";
 import { DisclosureDrawer } from "./DisclosureDrawer";
 import { RecentExerciseTrends } from "./RecentExerciseTrends";
+import type { ProfileCharacter } from "../../lib/database.types";
 
 type ExerciseHistoryActionsProps = {
   contextMessage: string | null;
   exerciseId: string;
   muscleGroups: readonly string[];
   previousSets: ExerciseHistorySet[];
-  profileName: string;
+  profileCharacter: ProfileCharacter | null;
   targetReps: (string | null)[];
 };
 
@@ -22,15 +23,17 @@ export function ExerciseHistoryActions({
   exerciseId,
   muscleGroups,
   previousSets,
-  profileName,
+  profileCharacter,
   targetReps,
 }: ExerciseHistoryActionsProps) {
   const [openPanel, setOpenPanel] = useState<
     "context" | "trends" | "coach" | null
   >(null);
-  const [coachOpening] = useState(() => getRandomCoachOpening(profileName));
+  const [coachOpening] = useState(() =>
+    getRandomCoachOpening(profileCharacter),
+  );
   const coachSuggestions = getCoachSuggestions(
-    profileName,
+    profileCharacter,
     previousSets,
     targetReps,
     coachOpening,
@@ -56,7 +59,7 @@ export function ExerciseHistoryActions({
           variant="outline-primary-small"
         >
           <CharacterChat
-            profileName={profileName}
+            profileCharacter={profileCharacter}
             message={contextMessage}
           />
         </DisclosureDrawer>
@@ -73,7 +76,7 @@ export function ExerciseHistoryActions({
       >
         <RecentExerciseTrends
           exerciseId={exerciseId}
-          profileName={profileName}
+          profileCharacter={profileCharacter}
         />
       </DisclosureDrawer>
       <DisclosureDrawer
@@ -90,7 +93,7 @@ export function ExerciseHistoryActions({
       >
         <CharacterChat
           ariaLabel="Coach suggestions"
-          profileName={profileName}
+          profileCharacter={profileCharacter}
           message={coachSuggestions.opening}
         />
         <ul className="w-full list-disc space-y-2 py-1 pr-3 pl-8 text-xs leading-relaxed text-starlight">
