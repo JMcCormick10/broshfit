@@ -2,23 +2,27 @@ import { useEffect, useState } from "react";
 import {
   getExerciseHistory,
   type ExerciseHistory,
+  type ExerciseHistoryMode,
   type ExerciseHistorySet,
 } from "../lib/workouts";
 
 export function useExerciseHistory(
   exerciseId: string | null,
   sessionId: string,
-  currentCompletedExerciseIds: string[],
+  routineId: string | null,
+  historyMode: ExerciseHistoryMode,
 ) {
   const [history, setHistory] = useState<ExerciseHistory | null>(null);
+  const [hasCompletedRoutine, setHasCompletedRoutine] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const completedKey = currentCompletedExerciseIds.join(",");
 
   useEffect(() => {
     if (!exerciseId) {
       // oxlint-disable-next-line react/set-state-in-effect -- clear history when no exercise is selected
       setHistory(null);
+      // oxlint-disable-next-line react/set-state-in-effect -- clear routine status when no exercise is selected
+      setHasCompletedRoutine(false);
       // oxlint-disable-next-line react/set-state-in-effect -- clear error when no exercise is selected
       setError(null);
       // oxlint-disable-next-line react/set-state-in-effect -- clear loading state when no exercise is selected
@@ -32,13 +36,17 @@ export function useExerciseHistory(
     // oxlint-disable-next-line react/set-state-in-effect -- clear stale error before fetching history
     setError(null);
 
-    getExerciseHistory(exerciseId, sessionId, currentCompletedExerciseIds)
+    getExerciseHistory(exerciseId, sessionId, routineId, historyMode)
       .then((result) => {
-        if (isMounted) setHistory(result);
+        if (isMounted) {
+          setHistory(result.history);
+          setHasCompletedRoutine(result.hasCompletedRoutine);
+        }
       })
       .catch((historyError: unknown) => {
         if (isMounted) {
           setHistory(null);
+          setHasCompletedRoutine(false);
           setError(
             historyError instanceof Error
               ? historyError.message
@@ -53,10 +61,9 @@ export function useExerciseHistory(
     return () => {
       isMounted = false;
     };
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- completedKey summarizes the id list
-  }, [exerciseId, sessionId, completedKey]);
+  }, [exerciseId, sessionId, routineId, historyMode]);
 
-  return { history, isLoading, error };
+  return { history, hasCompletedRoutine, isLoading, error };
 }
 
 export function formatExerciseHistorySets(sets: ExerciseHistorySet[]): string {

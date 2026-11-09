@@ -12,7 +12,9 @@ import {
   type WorkoutReportExerciseStatus,
 } from "../../lib/workout-report";
 import {
+  type ExerciseHistoryMode,
   getExerciseProgress,
+  getCompletedRoutineSessionIds,
   getWorkoutSession,
   type CompletedWorkoutSummary,
   type ExerciseProgressEntry,
@@ -35,6 +37,7 @@ type WorkoutReportDialogProps = {
 type WorkoutReportData = {
   session: WorkoutSession | null;
   progressEntries: ExerciseProgressEntry[];
+  hasCompletedRoutine: boolean;
 };
 
 function getAssessmentStatusLabel(status: WorkoutReportExerciseStatus): string {
@@ -66,17 +69,25 @@ function getExerciseAssessment(
   session: WorkoutSession,
   workoutCompletedAt: string,
   progressEntries: ExerciseProgressEntry[],
+  historyMode: ExerciseHistoryMode,
 ): WorkoutReportExerciseAssessment {
   const history = progressEntries.filter(
     (entry) => entry.exerciseId === exercise.exerciseId,
   );
   const currentCompletionTime = new Date(workoutCompletedAt).getTime();
+  const priorHistory = history.filter(
+    (entry) =>
+      entry.sessionId !== session.id &&
+      new Date(entry.completedAt).getTime() < currentCompletionTime,
+  );
   const previous =
-    history.find(
-      (entry) =>
-        entry.sessionId !== session.id &&
-        new Date(entry.completedAt).getTime() < currentCompletionTime,
-    ) ?? null;
+    historyMode === "routine" && session.routineId !== null
+      ? (priorHistory.find(
+          (entry) => entry.routineId === session.routineId,
+        ) ??
+        priorHistory[0] ??
+        null)
+      : (priorHistory[0] ?? null);
 
   return assessWorkoutReportExercise(exercise, previous, history);
 }
@@ -91,6 +102,8 @@ export function WorkoutReportDialog({
   const [expandedExerciseId, setExpandedExerciseId] = useState<string | null>(
     null,
   );
+  const [historyMode, setHistoryMode] =
+    useState<ExerciseHistoryMode>("routine");
   const {
     data: report,
     error,
@@ -98,7 +111,11 @@ export function WorkoutReportDialog({
   } = useAsyncData<WorkoutReportData | null>(
     async () => {
       if (!workout.sessionId) {
-        return { session: null, progressEntries: [] };
+        return {
+          session: null,
+          progressEntries: [],
+          hasCompletedRoutine: false,
+        };
       }
 
       const session = await getWorkoutSession(workout.sessionId);
@@ -109,10 +126,24 @@ export function WorkoutReportDialog({
             .map((exercise) => exercise.exerciseId),
         ),
       ];
-      const progressEntries =
-        exerciseIds.length > 0 ? await getExerciseProgress(exerciseIds) : [];
+      const [progressEntries, completedRoutineSessionIds] = await Promise.all([
+        exerciseIds.length > 0
+          ? getExerciseProgress(exerciseIds)
+          : Promise.resolve([] as ExerciseProgressEntry[]),
+        session.routineId !== null
+          ? getCompletedRoutineSessionIds(
+              session.routineId,
+              session.id,
+              session.startedAt,
+            )
+          : Promise.resolve([] as string[]),
+      ]);
 
-      return { session, progressEntries };
+      return {
+        session,
+        progressEntries,
+        hasCompletedRoutine: completedRoutineSessionIds.length > 0,
+      };
     },
     [workout.sessionId],
     {
@@ -138,6 +169,7 @@ export function WorkoutReportDialog({
             session,
             workout.completedAt,
             report?.progressEntries ?? [],
+            historyMode,
           ),
         }));
   const category = getWorkoutReportCategory(
@@ -169,6 +201,35 @@ export function WorkoutReportDialog({
         message={characterMessage}
         profileCharacter={profileCharacter}
       />
+
+      {session !== null &&
+        session.routineId !== null &&
+        report?.hasCompletedRoutine && (
+          <div className="mt-5">
+            <label className="block space-y-1.5 text-sm font-medium">
+              <span>Exercise context</span>
+              <select
+                aria-label="Exercise context"
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-starlight outline-none focus:border-secondary"
+                onChange={(event) => {
+                  const mode = event.currentTarget.value;
+                  if (mode === "routine" || mode === "any") {
+                    setHistoryMode(mode);
+                  }
+                }}
+                value={historyMode}
+              >
+                <option value="routine">Within This Routine</option>
+                <option value="any">Any Routine</option>
+              </select>
+            </label>
+            <p className="mt-1.5 text-[10px] text-muted-steel">
+              {historyMode === "routine"
+                ? "If an exercise has no previous record in this routine, its latest session from any routine or freestyle workout is used."
+                : "Comparisons use the latest completed session from any routine or freestyle workout."}
+            </p>
+          </div>
+        )}
 
       <section
         aria-labelledby="workout-report-exercises-heading"

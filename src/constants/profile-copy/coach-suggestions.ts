@@ -22,6 +22,12 @@ type WeightedCoachSet = CompletedCoachSet & {
   weight: number;
 };
 
+type OneRepMaxSet = {
+  setNumber: number;
+  actualReps: number;
+  weight: number;
+};
+
 const DEFAULT_LOAD_INCREMENT_LB = 5;
 const LOWER_BODY_LOAD_INCREMENT_LB = 10;
 const LOWER_BODY_MUSCLE_GROUPS = new Set(["quads", "glutes", "hamstrings"]);
@@ -151,7 +157,7 @@ function formatNumber(value: number): string {
 }
 
 function getEstimatedOneRepMaxTarget(
-  bestSet: WeightedCoachSet,
+  bestSet: OneRepMaxSet,
   range: RepRange | null,
   loadIncrement: number,
 ): { weight: number; reps: number } {
@@ -178,6 +184,18 @@ function getEstimatedOneRepMaxTarget(
     weight: bestSet.weight + increments * loadIncrement,
     reps: targetReps,
   };
+}
+
+export function getNextEstimatedOneRepMaxTarget(
+  bestSet: OneRepMaxSet,
+  targetReps: (string | null)[],
+  muscleGroups: readonly string[],
+): { weight: number; reps: number } {
+  return getEstimatedOneRepMaxTarget(
+    bestSet,
+    getRepRangeForSet(targetReps, bestSet.setNumber),
+    getLoadIncrement(muscleGroups),
+  );
 }
 
 function getBodyweightSuggestions(
@@ -267,38 +285,15 @@ export function getCoachSuggestions(
   }
   const loadIncrement = getLoadIncrement(muscleGroups);
 
-  // Epley's formula ranks the prior sets; targets stay inside the planned rep
-  // range and use load increases when there is no room to add another rep.
-  const bestEstimatedSet = weightedSets.reduce<WeightedCoachSet | null>(
-    (best, set) => {
-      const estimate = set.weight * (1 + set.actualReps / 30);
-      const bestEstimate =
-        best === null ? null : best.weight * (1 + best.actualReps / 30);
-      return bestEstimate === null || estimate > bestEstimate ? set : best;
-    },
-    null,
-  );
   const heaviestSet = weightedSets.reduce<WeightedCoachSet | null>(
     (heaviest, set) =>
       heaviest === null || set.weight > heaviest.weight ? set : heaviest,
     null,
   );
-  const estimatedOneRepMaxTarget =
-    bestEstimatedSet === null
-      ? null
-      : getEstimatedOneRepMaxTarget(
-          bestEstimatedSet,
-          getRepRangeForSet(targetReps, bestEstimatedSet.setNumber),
-          loadIncrement,
-        );
   const repProgressionTarget = getRepProgressionTarget(
     weightedSets,
     targetReps,
   );
-  const estimatedOneRepMaxRange =
-    bestEstimatedSet === null
-      ? null
-      : getRepRangeForSet(targetReps, bestEstimatedSet.setNumber);
   const heaviestLoadRange =
     heaviestSet === null
       ? null
@@ -326,13 +321,6 @@ export function getCoachSuggestions(
     opening,
     suggestions: [
       ...(allSetsAtRepRangeLimit ? [heaviestLoadSuggestion] : []),
-      {
-        label: "Estimated 1RM",
-        description:
-          bestEstimatedSet === null || estimatedOneRepMaxTarget === null
-            ? "Log a weighted set with reps to establish a numeric baseline."
-            : `To set a new estimated 1RM, aim for ${formatNumber(estimatedOneRepMaxTarget.weight)} lb × ${estimatedOneRepMaxTarget.reps} reps${estimatedOneRepMaxRange ? ` (within the ${formatRepRange(estimatedOneRepMaxRange)} rep range)` : ""}.`,
-      },
       ...(repProgressionTarget
         ? [
             {

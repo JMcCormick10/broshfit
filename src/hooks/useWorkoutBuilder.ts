@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { getExercises, type ExerciseRecord } from "../lib/exercises";
 import {
   createWorkout,
+  getWorkoutRoutines,
   updateWorkout,
   type WorkoutExerciseInput,
   type WorkoutRoutine,
@@ -12,6 +13,44 @@ import { useDragReorder } from "./useDragReorder";
 export type WorkoutBuilderEntry = WorkoutExerciseInput & {
   key: string;
 };
+
+const MAX_WORKOUT_NAME_LENGTH = 80;
+
+function normalizeRoutineName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getCopyRoutineName(
+  sourceName: string,
+  routines: WorkoutRoutine[],
+): string {
+  const existingNames = new Set(
+    routines.map((routine) => normalizeRoutineName(routine.name)),
+  );
+  let suffix = " copy";
+  let copyNumber = 2;
+
+  while (true) {
+    const prefix = sourceName
+      .slice(0, MAX_WORKOUT_NAME_LENGTH - suffix.length)
+      .trimEnd();
+    const copyName = `${prefix}${suffix}`;
+    if (!existingNames.has(normalizeRoutineName(copyName))) return copyName;
+
+    suffix = ` copy ${copyNumber}`;
+    copyNumber += 1;
+  }
+}
+
+async function getCopyableRoutines(): Promise<WorkoutRoutine[]> {
+  const [activeRoutines, archivedRoutines] = await Promise.all([
+    getWorkoutRoutines(),
+    getWorkoutRoutines(true),
+  ]);
+  return [...activeRoutines, ...archivedRoutines].sort((first, second) =>
+    first.name.localeCompare(second.name),
+  );
+}
 
 type UseWorkoutBuilderOptions = {
   onClose: () => void;
@@ -36,6 +75,18 @@ export function useWorkoutBuilder({
   const [isSaving, setIsSaving] = useState(false);
   const [isAddExerciseOpen, setIsAddExerciseOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const {
+    data: routinesToCopy,
+    error: copyRoutinesError,
+    isLoading: isLoadingCopyRoutines,
+  } = useAsyncData(
+    () => (routine ? Promise.resolve([]) : getCopyableRoutines()),
+    [routine?.id],
+    {
+      errorMessage: "Could not load workout routines to copy.",
+      initialData: [] as WorkoutRoutine[],
+    },
+  );
 
   const {
     data: exercises,
@@ -110,6 +161,26 @@ export function useWorkoutBuilder({
   function removeEntry(entryKey: string) {
     setEntries((currentEntries) =>
       currentEntries.filter((entry) => entry.key !== entryKey),
+    );
+  }
+
+  function copyRoutine(sourceRoutineId: string) {
+    const sourceRoutine = routinesToCopy.find(
+      (candidate) => candidate.id === sourceRoutineId,
+    );
+    if (!sourceRoutine) {
+      setFormError("Could not find that routine to copy. Please try again.");
+      return;
+    }
+
+    setFormError(null);
+    setName(getCopyRoutineName(sourceRoutine.name, routinesToCopy));
+    setEntries(
+      sourceRoutine.entries.map((entry) => ({
+        key: crypto.randomUUID(),
+        exerciseId: entry.exerciseId,
+        targetSets: entry.targetSets.map((set) => ({ reps: set.reps })),
+      })),
     );
   }
 
@@ -190,6 +261,8 @@ export function useWorkoutBuilder({
     addExercise,
     addSet,
     closeDialog,
+    copyRoutine,
+    copyRoutinesError,
     entries,
     entryDrag,
     exercises,
@@ -198,12 +271,14 @@ export function useWorkoutBuilder({
     handleSubmit,
     isAddExerciseOpen,
     isLoading,
+    isLoadingCopyRoutines,
     isSaving,
     loadError,
     moveEntry,
     name,
     removeEntry,
     removeSet,
+    routinesToCopy,
     selectedExerciseId,
     setIsAddExerciseOpen,
     setName,

@@ -86,6 +86,7 @@ export type ProgressExerciseSet = {
 export type ExerciseProgressEntry = {
   id: string;
   sessionId: string;
+  routineId: string | null;
   sourceWorkoutExerciseId: string | null;
   wasRoutineExercise: boolean;
   exerciseId: string;
@@ -135,7 +136,7 @@ export async function getExerciseProgress(
       .order("set_number", { ascending: true }),
     client
       .from("workout_sessions")
-      .select("id, completed_at")
+      .select("id, completed_at, workout_id")
       .in("id", sessionIds),
     client
       .from("completed_workouts")
@@ -150,6 +151,9 @@ export async function getExerciseProgress(
   const exerciseById = new Map(exercisesResult.data.map((exercise) => [exercise.id, exercise]));
   const sessionCompletedAtById = new Map(
     sessionResult.data.map((session) => [session.id, session.completed_at]),
+  );
+  const sessionRoutineIdById = new Map(
+    sessionResult.data.map((session) => [session.id, session.workout_id]),
   );
   const workoutCompletedAtBySessionId = new Map<string, string>();
   for (const completion of completionResult.data) {
@@ -185,6 +189,7 @@ export async function getExerciseProgress(
     return [{
       id: entry.id,
       sessionId: entry.session_id,
+      routineId: sessionRoutineIdById.get(entry.session_id) ?? null,
       sourceWorkoutExerciseId: entry.source_workout_exercise_id,
       wasRoutineExercise: entry.was_routine_exercise,
       exerciseId: entry.exercise_id,
@@ -572,219 +577,120 @@ export type ExerciseHistorySet = {
   actualWeight: number | null;
 };
 
+export type ExerciseHistoryMode = "routine" | "any";
+
 export type ExerciseHistory = {
   completedAt: string;
+  comparisonScope: ExerciseHistoryMode;
   notes: string;
   sets: ExerciseHistorySet[];
-  contextSentences: string[];
-  muscleGroups: string[];
 };
 
-function formatOrdinal(position: number): string {
-  const remainder = position % 100;
-  if (remainder >= 11 && remainder <= 13) return `${position}th`;
-  switch (position % 10) {
-    case 1:
-      return `${position}st`;
-    case 2:
-      return `${position}nd`;
-    case 3:
-      return `${position}rd`;
-    default:
-      return `${position}th`;
-  }
-}
+export type ExerciseHistoryResult = {
+  hasCompletedRoutine: boolean;
+  history: ExerciseHistory | null;
+};
 
-function formatMuscleList(names: string[]): string {
-  const lowered = names.map((name) => name.toLowerCase());
-  if (lowered.length <= 1) return lowered[0] ?? "";
-  if (lowered.length === 2) return `${lowered[0]} and ${lowered[1]}`;
-  return `${lowered.slice(0, -1).join(", ")}, and ${lowered[lowered.length - 1]}`;
+export async function getCompletedRoutineSessionIds(
+  routineId: string,
+  excludeSessionId: string,
+  startedBefore?: string,
+): Promise<string[]> {
+  let query = getSupabaseClient()
+    .from("workout_sessions")
+    .select("id")
+    .eq("workout_id", routineId)
+    .eq("status", "completed")
+    .neq("id", excludeSessionId);
+
+  if (startedBefore !== undefined) {
+    query = query.lt("started_at", startedBefore);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data.map((session) => session.id);
 }
 
 export async function getExerciseHistory(
   exerciseId: string,
   excludeSessionId: string,
-  currentCompletedExerciseIds: string[],
-): Promise<ExerciseHistory | null> {
+  routineId: string | null,
+  historyMode: ExerciseHistoryMode,
+): Promise<ExerciseHistoryResult> {
   const client = getSupabaseClient();
 
-  const { data: lastEntries, error: lastError } = await client
-    .from("workout_session_exercises")
-    .select("id, session_id, completed_at, completed_order, notes")
-    .eq("exercise_id", exerciseId)
-    .not("completed_at", "is", null)
-    .neq("session_id", excludeSessionId)
-    .order("completed_at", { ascending: false })
-    .limit(1);
+  let lastEntry: {
+    id: string;
+    completed_at: string;
+    notes: string;
+  } | null = null;
+  let comparisonScope: ExerciseHistoryMode = "any";
+  let routineSessionIds: string[] = [];
 
-  if (lastError) throw lastError;
+  if (routineId !== null) {
+    routineSessionIds = await getCompletedRoutineSessionIds(
+      routineId,
+      excludeSessionId,
+    );
+  }
 
-  const lastEntry = lastEntries[0];
-  if (!lastEntry) return null;
-
-  const [setsResult, priorResult] = await Promise.all([
-    client
-      .from("workout_session_sets")
-      .select("set_number, actual_reps, actual_weight")
-      .eq("session_exercise_id", lastEntry.id)
-      .order("set_number", { ascending: true }),
-    client
+  if (historyMode === "routine" && routineSessionIds.length > 0) {
+    const { data: routineEntries, error: routineEntriesError } = await client
       .from("workout_session_exercises")
-      .select("exercise_id, completed_order")
-      .eq("session_id", lastEntry.session_id)
+      .select("id, completed_at, notes")
+      .eq("exercise_id", exerciseId)
+      .in("session_id", routineSessionIds)
       .not("completed_at", "is", null)
-      .lt("completed_order", lastEntry.completed_order ?? 0)
-      .order("completed_order", { ascending: true }),
-  ]);
+      .order("completed_at", { ascending: false })
+      .limit(1);
+
+    if (routineEntriesError) throw routineEntriesError;
+    lastEntry = routineEntries[0] ?? null;
+    if (lastEntry) comparisonScope = "routine";
+  }
+
+  if (!lastEntry) {
+    const { data: lastEntries, error: lastError } = await client
+      .from("workout_session_exercises")
+      .select("id, completed_at, notes")
+      .eq("exercise_id", exerciseId)
+      .not("completed_at", "is", null)
+      .neq("session_id", excludeSessionId)
+      .order("completed_at", { ascending: false })
+      .limit(1);
+
+    if (lastError) throw lastError;
+    lastEntry = lastEntries[0] ?? null;
+  }
+
+  if (!lastEntry) {
+    return {
+      hasCompletedRoutine: routineSessionIds.length > 0,
+      history: null,
+    };
+  }
+
+  const setsResult = await client
+    .from("workout_session_sets")
+    .select("set_number, actual_reps, actual_weight")
+    .eq("session_exercise_id", lastEntry.id)
+    .order("set_number", { ascending: true });
 
   if (setsResult.error) throw setsResult.error;
-  if (priorResult.error) throw priorResult.error;
-
-  const priorExerciseIds = [
-    ...new Set(priorResult.data.map((entry) => entry.exercise_id)),
-  ];
-  const involvedExerciseIds = [
-    ...new Set([
-      exerciseId,
-      ...priorExerciseIds,
-      ...currentCompletedExerciseIds,
-    ]),
-  ];
-
-  const [targetsResult, groupsResult] = await Promise.all([
-    client
-      .from("exercise_muscle_groups")
-      .select("exercise_id, muscle_group_id, role")
-      .in("exercise_id", involvedExerciseIds),
-    client.from("muscle_groups").select("id, name"),
-  ]);
-
-  if (targetsResult.error) throw targetsResult.error;
-  if (groupsResult.error) throw groupsResult.error;
-
-  const groupNames = new Map(
-    groupsResult.data.map((group) => [group.id, group.name]),
-  );
-
-  const rolesByExercise = new Map<
-    string,
-    Map<string, "primary" | "secondary">
-  >();
-  for (const target of targetsResult.data) {
-    const roles =
-      rolesByExercise.get(target.exercise_id) ??
-      new Map<string, "primary" | "secondary">();
-    roles.set(
-      target.muscle_group_id,
-      target.role === "primary" ? "primary" : "secondary",
-    );
-    rolesByExercise.set(target.exercise_id, roles);
-  }
-
-  const ownRoles =
-    rolesByExercise.get(exerciseId) ??
-    new Map<string, "primary" | "secondary">();
-
-  const primaryMuscleGroups: string[] = [];
-  const secondaryMuscleGroups: string[] = [];
-  for (const [groupId, role] of ownRoles) {
-    const name = groupNames.get(groupId) ?? "Unknown";
-    (role === "primary" ? primaryMuscleGroups : secondaryMuscleGroups).push(
-      name,
-    );
-  }
-
-  function sharedByRole(otherExerciseId: string) {
-    const sharedPrimary: string[] = [];
-    const sharedSecondary: string[] = [];
-    for (const groupId of rolesByExercise.get(otherExerciseId)?.keys() ?? []) {
-      const ownRole = ownRoles.get(groupId);
-      if (!ownRole) continue;
-      const name = groupNames.get(groupId) ?? "Unknown";
-      (ownRole === "primary" ? sharedPrimary : sharedSecondary).push(name);
-    }
-    return { sharedPrimary, sharedSecondary };
-  }
-
-  const priorExercises = priorResult.data.map((entry) =>
-    sharedByRole(entry.exercise_id),
-  );
-
-  const currentPosition = currentCompletedExerciseIds.length + 1;
-  const priorsWithShared = priorExercises.filter(
-    (prior) => prior.sharedPrimary.length + prior.sharedSecondary.length > 0,
-  );
-  const sharedMuscleNames = [
-    ...new Set(
-      priorsWithShared.flatMap((prior) => [
-        ...prior.sharedPrimary,
-        ...prior.sharedSecondary,
-      ]),
-    ),
-  ];
-  const currentSharedNames = [
-    ...new Set(
-      currentCompletedExerciseIds.flatMap((id) => {
-        const { sharedPrimary, sharedSecondary } = sharedByRole(id);
-        return [...sharedPrimary, ...sharedSecondary];
-      }),
-    ),
-  ];
-
-  const contextSentences: string[] = [];
-
-  if (primaryMuscleGroups.length > 0 || secondaryMuscleGroups.length > 0) {
-    const parts: string[] = [];
-    if (primaryMuscleGroups.length > 0) {
-      parts.push(`targets your ${formatMuscleList(primaryMuscleGroups)}`);
-    }
-    if (secondaryMuscleGroups.length > 0) {
-      parts.push(
-        primaryMuscleGroups.length > 0
-          ? `with ${formatMuscleList(secondaryMuscleGroups)} helping out`
-          : `also works your ${formatMuscleList(secondaryMuscleGroups)}`,
-      );
-    }
-    contextSentences.push(`This move ${parts.join(", ")}.`);
-  }
-
-  if (priorExercises.length > 0) {
-    contextSentences.push(
-      priorsWithShared.length > 0
-        ? `${priorsWithShared.length} of the ${priorExercises.length} earlier exercise${priorExercises.length === 1 ? "" : "s"} also worked your ${formatMuscleList(sharedMuscleNames)}.`
-        : "The earlier exercises didn't hit the same muscles.",
-    );
-  } else {
-    contextSentences.push("You opened with this exercise.");
-  }
-
-  if (lastEntry.completed_order !== null) {
-    contextSentences.push(
-      lastEntry.completed_order === currentPosition
-        ? `You did this ${formatOrdinal(currentPosition)} last time, and you're doing it in the same spot today.`
-        : `You did this ${formatOrdinal(lastEntry.completed_order)} last time; you're doing it ${formatOrdinal(currentPosition)} today.`,
-    );
-  }
-
-  if (currentPosition > 1) {
-    contextSentences.push(
-      currentSharedNames.length > 0
-        ? `So far this session, you've worked your ${formatMuscleList(currentSharedNames)}.`
-        : "You haven't trained these muscles yet this session.",
-    );
-  }
 
   return {
-    completedAt: lastEntry.completed_at,
-    notes: lastEntry.notes,
-    sets: setsResult.data.map((set) => ({
-      setNumber: set.set_number,
-      actualReps: set.actual_reps,
-      actualWeight: set.actual_weight,
-    })),
-    contextSentences,
-    muscleGroups: [...new Set([...primaryMuscleGroups, ...secondaryMuscleGroups])],
+    hasCompletedRoutine: routineSessionIds.length > 0,
+    history: {
+      completedAt: lastEntry.completed_at,
+      comparisonScope,
+      notes: lastEntry.notes,
+      sets: setsResult.data.map((set) => ({
+        setNumber: set.set_number,
+        actualReps: set.actual_reps,
+        actualWeight: set.actual_weight,
+      })),
+    },
   };
 }
 

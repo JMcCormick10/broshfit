@@ -22,6 +22,8 @@ export function WorkoutBuilderDialog({
     addExercise,
     addSet,
     closeDialog,
+    copyRoutine,
+    copyRoutinesError,
     entries,
     entryDrag,
     exercises,
@@ -30,12 +32,14 @@ export function WorkoutBuilderDialog({
     handleSubmit,
     isAddExerciseOpen,
     isLoading,
+    isLoadingCopyRoutines,
     isSaving,
     loadError,
     moveEntry,
     name,
     removeEntry,
     removeSet,
+    routinesToCopy,
     selectedExerciseId,
     setIsAddExerciseOpen,
     setName,
@@ -56,6 +60,41 @@ export function WorkoutBuilderDialog({
         className="max-h-[92vh] overflow-y-auto p-5 sm:p-7"
       >
         <form onSubmit={handleSubmit}>
+          {!routine && (
+            <div className="mb-4">
+              <FormField label="Copy from existing routine">
+                <select
+                  aria-label="Copy from existing routine"
+                  className="w-full rounded-md border border-border bg-void px-3.5 py-3 text-sm text-starlight outline-none focus:border-secondary"
+                  disabled={
+                    isLoadingCopyRoutines || routinesToCopy.length === 0
+                  }
+                  onChange={(event) => copyRoutine(event.target.value)}
+                  value=""
+                >
+                  <option value="">
+                    {isLoadingCopyRoutines
+                      ? "Loading routines..."
+                      : routinesToCopy.length === 0
+                        ? "No routines available to copy"
+                        : "Choose a routine to copy"}
+                  </option>
+                  {routinesToCopy.map((existingRoutine) => (
+                    <option key={existingRoutine.id} value={existingRoutine.id}>
+                      {existingRoutine.name}
+                      {existingRoutine.archivedAt ? " (Archived)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              {copyRoutinesError && (
+                <p className="mt-2 text-sm text-danger" role="alert">
+                  Could not load routines to copy: {copyRoutinesError}
+                </p>
+              )}
+            </div>
+          )}
+
           <FormField label="Workout name">
             <input
               autoFocus

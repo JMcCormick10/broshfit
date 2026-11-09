@@ -19,6 +19,11 @@ export type ExerciseRecord = ExerciseRow &
     secondaryMuscleGroups: string[];
   };
 
+export type ExerciseMuscleTargets = {
+  primaryMuscleGroups: string[];
+  secondaryMuscleGroups: string[];
+};
+
 function throwIfDuplicate(error: { code?: string; message: string } | null) {
   if (
     error?.code === "23505" &&
@@ -58,6 +63,37 @@ export async function updateExercise(
   throwIfDuplicate(error);
   if (!data) throw new Error("Exercise update returned no ID.");
   return data;
+}
+
+export async function getExerciseMuscleTargets(
+  exerciseId: string,
+): Promise<ExerciseMuscleTargets> {
+  const client = getSupabaseClient();
+  const [targetsResult, muscleGroups] = await Promise.all([
+    client
+      .from("exercise_muscle_groups")
+      .select("muscle_group_id, role")
+      .eq("exercise_id", exerciseId),
+    getMuscleGroups(),
+  ]);
+
+  if (targetsResult.error) throw targetsResult.error;
+
+  const muscleGroupNames = new Map(
+    muscleGroups.map((muscleGroup) => [muscleGroup.id, muscleGroup.name]),
+  );
+  const primaryMuscleGroups: string[] = [];
+  const secondaryMuscleGroups: string[] = [];
+
+  for (const target of targetsResult.data) {
+    const name = muscleGroupNames.get(target.muscle_group_id) ?? "Unknown";
+    (target.role === "primary"
+      ? primaryMuscleGroups
+      : secondaryMuscleGroups
+    ).push(name);
+  }
+
+  return { primaryMuscleGroups, secondaryMuscleGroups };
 }
 
 export async function getExercises(): Promise<ExerciseRecord[]> {

@@ -10,7 +10,6 @@ import { RecentExerciseTrends } from "./RecentExerciseTrends";
 import type { ProfileCharacter } from "../../lib/database.types";
 
 type ExerciseHistoryActionsProps = {
-  contextMessage: string | null;
   exerciseId: string;
   muscleGroups: readonly string[];
   previousSets: ExerciseHistorySet[];
@@ -19,16 +18,13 @@ type ExerciseHistoryActionsProps = {
 };
 
 export function ExerciseHistoryActions({
-  contextMessage,
   exerciseId,
   muscleGroups,
   previousSets,
   profileCharacter,
   targetReps,
 }: ExerciseHistoryActionsProps) {
-  const [openPanel, setOpenPanel] = useState<
-    "context" | "trends" | "coach" | null
-  >(null);
+  const [openPanel, setOpenPanel] = useState<"trends" | "coach" | null>(null);
   const [coachOpening] = useState(() =>
     getRandomCoachOpening(profileCharacter),
   );
@@ -39,31 +35,11 @@ export function ExerciseHistoryActions({
     coachOpening,
     muscleGroups,
   );
-  const isContextOpen = openPanel === "context";
   const isTrendsOpen = openPanel === "trends";
   const isCoachOpen = openPanel === "coach";
 
   return (
     <div className="mt-2 space-y-3">
-      {contextMessage && (
-        <DisclosureDrawer
-          contentClassName="mt-2 rounded-md border border-primary/40 bg-surface/40 p-3"
-          contentId="exercise-context-panel"
-          isOpen={isContextOpen}
-          onToggle={() =>
-            setOpenPanel((open) => (open === "context" ? null : "context"))
-          }
-          trigger={(isOpen) =>
-            isOpen ? "Hide More Context" : "Show More Context"
-          }
-          variant="outline-primary-small"
-        >
-          <CharacterChat
-            profileCharacter={profileCharacter}
-            message={contextMessage}
-          />
-        </DisclosureDrawer>
-      )}
       <DisclosureDrawer
         contentClassName="mt-2 rounded-md border border-secondary/40 bg-surface/40 p-3"
         contentId="exercise-trends-panel"

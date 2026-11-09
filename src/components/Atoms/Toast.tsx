@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { getProfileNotificationMessage, type ProfileNotification } from "../../constants/profile-copy/notifications";
 import { CharacterChat } from "../Molecules/CharacterChat";
@@ -19,6 +24,7 @@ export function Toast({
 }: ToastProps) {
   const [isVisible, setIsVisible] = useState(false);
   const dismissRef = useRef(onDismiss);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const message = getProfileNotificationMessage(
     profileCharacter,
     notification,
@@ -27,6 +33,27 @@ export function Toast({
   useEffect(() => {
     dismissRef.current = onDismiss;
   }, [onDismiss]);
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) {
+      return;
+    }
+
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    const pointerStart = pointerStartRef.current;
+    pointerStartRef.current = null;
+    if (!pointerStart) return;
+
+    const deltaX = event.clientX - pointerStart.x;
+    const deltaY = event.clientY - pointerStart.y;
+    if (deltaY <= -48 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      dismissRef.current();
+    }
+  }
 
   useEffect(() => {
     const showFrame = requestAnimationFrame(() => setIsVisible(true));
@@ -50,7 +77,12 @@ export function Toast({
         isVisible
           ? "translate-y-0 opacity-100"
           : "pointer-events-none translate-y-2 opacity-0"
-      }`}
+      } touch-pan-x`}
+      onPointerCancel={() => {
+        pointerStartRef.current = null;
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       role="status"
     >
       <CharacterChat

@@ -5,7 +5,10 @@ import { Spinner } from "../Atoms/Spinner";
 import { Toast } from "../Atoms/Toast";
 import { DialogShell } from "../Molecules/DialogShell";
 import { ConfirmationDialog } from "../Molecules/ConfirmationDialog";
-import type { WorkoutSession } from "../../lib/workouts";
+import {
+  type ExerciseHistoryMode,
+  type WorkoutSession,
+} from "../../lib/workouts";
 import { useActiveWorkoutSession } from "../../hooks/useActiveWorkoutSession";
 import { SessionExercisePickerDialog } from "./SessionExercisePickerDialog";
 import { useExerciseHistory } from "../../hooks/useExerciseHistory";
@@ -30,6 +33,10 @@ export function ActiveWorkoutDashboard({
   session,
 }: ActiveWorkoutDashboardProps) {
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false);
+  const [exerciseHistoryMode, setExerciseHistoryMode] =
+    useState<ExerciseHistoryMode>(() =>
+      session.routineId === null ? "any" : "routine",
+    );
   const {
     addExerciseToSession,
     addSet,
@@ -59,12 +66,14 @@ export function ActiveWorkoutDashboard({
 
   const {
     history: exerciseHistory,
+    hasCompletedRoutine,
     isLoading: isLoadingHistory,
     error: exerciseHistoryError,
   } = useExerciseHistory(
     selectedExercise?.exerciseId ?? null,
     session.id,
-    completedExercises.map((exercise) => exercise.exerciseId),
+    session.routineId,
+    exerciseHistoryMode,
   );
 
   return (
@@ -269,13 +278,18 @@ export function ActiveWorkoutDashboard({
       {selectedExercise && (
         <ActiveWorkoutExerciseDialog
           exercise={selectedExercise}
+          exerciseHistoryMode={
+            session.routineId === null ? "any" : exerciseHistoryMode
+          }
           exerciseHistory={exerciseHistory}
           exerciseHistoryError={exerciseHistoryError}
+          hasCompletedRoutine={hasCompletedRoutine}
           isLoadingHistory={isLoadingHistory}
           isSaving={isSaving}
           onAddSet={addSet}
           onClose={() => setSelectedExerciseId(null)}
           onCompleteExercise={completeExercise}
+          onExerciseHistoryModeChange={setExerciseHistoryMode}
           onSaveProgress={saveProgress}
           profileCharacter={profileCharacter}
           saveError={error}

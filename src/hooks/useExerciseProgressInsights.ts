@@ -27,11 +27,47 @@ export function estimateOneRepMax(
 export function getBestEstimatedOneRepMax(
   entries: ExerciseProgressEntry[],
 ): number | null {
-  // Estimate each valid set and select the maximum. Session metrics call this
-  // with one entry; range summaries therefore use the best set in that range.
-  return entries.flatMap((entry) => entry.sets.map((set) => estimateOneRepMax(set.actualWeight, set.actualReps)))
-    .filter((value): value is number => value !== null)
-    .reduce<number | null>((best, value) => best === null || value > best ? value : best, null);
+  return getBestEstimatedOneRepMaxSet(entries)?.estimatedOneRepMax ?? null;
+}
+
+export type BestEstimatedOneRepMaxSet = {
+  completedAt: string;
+  estimatedOneRepMax: number;
+  reps: number;
+  setNumber: number;
+  weight: number;
+};
+
+export function getBestEstimatedOneRepMaxSet(
+  entries: ExerciseProgressEntry[],
+): BestEstimatedOneRepMaxSet | null {
+  let best: BestEstimatedOneRepMaxSet | null = null;
+
+  for (const entry of entries) {
+    for (const set of entry.sets) {
+      if (set.actualWeight === null || set.actualReps === null) continue;
+      const estimatedOneRepMax = estimateOneRepMax(
+        set.actualWeight,
+        set.actualReps,
+      );
+      if (
+        estimatedOneRepMax === null ||
+        (best !== null && estimatedOneRepMax <= best.estimatedOneRepMax)
+      ) {
+        continue;
+      }
+
+      best = {
+        completedAt: entry.completedAt,
+        estimatedOneRepMax,
+        reps: set.actualReps,
+        setNumber: set.setNumber,
+        weight: set.actualWeight,
+      };
+    }
+  }
+
+  return best;
 }
 
 export type ExerciseSessionMetrics = {
